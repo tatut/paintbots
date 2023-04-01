@@ -1,0 +1,8 @@
+{;; HTTP port and ip to serve on
+ :port 31173
+ :ip "0.0.0.0"
+ ;; How long does executing a paint command take
+ :command-duration-ms 100
+
+ ;; Canvas size
+ :width 150 :height 100}
