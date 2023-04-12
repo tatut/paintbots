@@ -63,14 +63,21 @@
          {:on-open (fn [ch]
                      (go
                        (<! (timeout (:command-duration-ms state)))
-                       (let [{:keys [x y color]} (state/cmd-sync! :bot-command
-                                                                  :canvas canvas
-                                                                  :id id
-                                                                  :command-fn (partial command-fn params))]
-                         (httpkit/send! ch {:status 200
-                                            :headers {"Content-Type" "application/x-www-form-urlencoded"}
-                                            :body (str "x=" x "&y=" y "&color=" (state/color-name color))}
-                                        true))))})))))
+                       (let [response (atom nil)
+                             {:keys [x y color] :as bot}
+                             (state/cmd-sync! :bot-command
+                                              :canvas canvas
+                                              :id id
+                                              :command-fn (partial command-fn (assoc params ::response response)))
+                             resp @response]
+                         (httpkit/send!
+                          ch
+                          (if (string? resp)
+                            {:status 200 :headers {"Content-Type" "text/plain"} :body resp}
+                            {:status 200
+                             :headers {"Content-Type" "application/x-www-form-urlencoded"}
+                             :body (str "x=" x "&y=" y "&color=" (state/color-name color))})
+                          true))))})))))
 (defn move [req]
   (bot-command
    req
@@ -107,7 +114,9 @@
   (bot-command
    req
    (fn [_ {:keys [x y color] :as bot} ^BufferedImage img]
-     (.setRGB img x y (->col color))
+     (when (and (< -1 x (.getWidth img))
+                (< -1 y (.getHeight img)))
+       (.setRGB img x y (->col color)))
      bot)))
 
 (defn clear [req]
@@ -119,6 +128,37 @@
        ;; clear! gfx
        ))
    ))
+
+(def from-col
+  (memoize
+   (fn [rgb]
+     (let [c (java.awt.Color. rgb)]
+       [(.getRed c) (.getGreen c) (.getBlue c)]))))
+
+(defn look [req]
+  (bot-command
+   req
+   (fn [{r ::response} bot ^BufferedImage img]
+     ;; A hacky way to pass out a response
+     (let [w (.getWidth img)
+           h (.getHeight img)]
+       (reset! r (with-out-str
+                   (loop [y 0
+                          x 0]
+                     (cond
+                       (= x w)
+                       (do
+                         (print "\n")
+                         (recur (inc y) 0))
+
+                       (= y h)
+                       :done
+
+                       :else
+                       (let [c (.getRGB img x y)]
+                         (print (if (zero? c) "." (state/color-name (from-col c))))
+                         (recur y (inc x))))))))
+     bot)))
 
 (defn app-bar []
   (h/html
@@ -206,6 +246,9 @@
 
       (contains? p :clear)
       (clear req)
+
+      (contains? p :look)
+      (look req)
 
       :else
       {:status 404

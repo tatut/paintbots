@@ -53,3 +53,7 @@ say() {
          --data-urlencode "msg=$MSG" \
          $PAINTBOTS_URL
 }
+
+look() {
+    post "id=$PAINTBOTS_ID&look"
+}
