@@ -1,13 +1,14 @@
 (ns paintbots.main
   (:require [org.httpkit.server :as httpkit]
-            ring.util.codec
+            [ring.middleware.params :as params]
             [clojure.core.async :refer [go <! timeout]]
             [clojure.string :as str]
             [ripley.html :as h]
             [ripley.live.context :as context]
             [clojure.java.io :as io]
             [ripley.live.source :as source]
-            [ripley.live.poll :as poll]))
+            [ripley.live.poll :as poll]
+            [paintbots.png :as png]))
 
 (defonce server nil)
 
@@ -25,7 +26,7 @@
              ;; cyan
              [0 255 255]])
 
-(defn register [{{name :register} :params :as _req}]
+(defn register [{{name :register} :form-params :as _req}]
   (let [name (str/trim name)]
     (if (some (fn [[_ {bot-name :name}]]
                 (= bot-name name)) (:bots @state))
@@ -43,8 +44,7 @@
         {:status 200
          :body id}))))
 
-(defn bot-command [{{:keys [id] :as params} :params :as req} command-fn]
-  (println "PARAMS: " (pr-str params))
+(defn bot-command [{{:keys [id] :as params} :form-params :as req} command-fn]
   (cond
     (not (contains? (:bots @state) id))
     {:status 409
@@ -97,19 +97,6 @@
        (update-in state [:canvas [x y]]
                   (fn [[r1 g1 b1]]
                     [(avg r r1) (avg g g1) (avg b b1)]))))))
-
-
-(defn params [{:keys [uri body request-method] :as req}]
-  (if (and (= uri "/")
-           (= request-method :post))
-    (assoc req :params
-           (-> body slurp ring.util.codec/form-decode
-               (as-> p
-                   (into {}
-                         (map (fn [[k v]]
-                                [(keyword k) v]))
-                         p))))
-    req))
 
 (defn app-bar []
   (h/html
@@ -164,33 +151,48 @@
                          :let [fill (str "rgb(" r "," g "," b ")")]]
                 [:rect {:x x :y y :width 1 :height 1 :fill fill}]]]))]]]]]])))
 
+(defn handle-post [req]
+  (let [{p :form-params :as req}
+        (update req :form-params
+                #(into {}
+                      (map (fn [[k v]]
+                             [(keyword k) v]))
+                      %))]
+    (cond
+      (contains? p :register)
+      (register req)
+
+      (contains? p :move)
+      (move req)
+
+      (contains? p :paint)
+      (paint req)
+
+      :else
+      {:status 404
+       :body "I don't recognize those parameters, try something else."})))
+
 (let [ws-handler (context/connection-handler "/ws" :ping-interval 45)]
-  (defn handler [config {uri :uri :as req}]
+  (defn handler [config {m :request-method uri :uri :as req}]
+    (def *req req)
     (if (= uri "/ws")
       (ws-handler req)
-      (let [{p :params :as req} (params req)]
-        (cond
-          (contains? p :register)
-          (register req)
+      (cond
+        (= :post m)
+        (handle-post req)
 
-          (contains? p :move)
-          (move req)
+        (= uri "/")
+        (h/render-response (partial page config))
 
-          (contains? p :paint)
-          (paint req)
+        (= uri "/paintbots.css")
+        {:status 200
+         :body (slurp (io/resource "public/paintbots.css"))}
 
-          (= uri "/")
-          (h/render-response (partial page config))
-
-          (= uri "/paintbots.css")
-          {:status 200
-           :body (slurp (io/resource "public/paintbots.css"))}
-
-          :else
-          (do
-            (println "Someone tried: " (pr-str (:uri req)))
-            {:status 404
-             :body "Ain't nothing more here for you, go away!"}))))))
+        :else
+        (do
+          (println "Someone tried: " (pr-str (:uri req)))
+          {:status 404
+           :body "Ain't nothing more here for you, go away!"})))))
 
 (defn -main [& [config-file :as _args]]
   (let [config-file (or config-file "config.edn")
@@ -198,8 +200,10 @@
         {:keys [ip port] :as config} (read-string (slurp config-file))]
     (println "Config: " (pr-str config))
     (send state merge (select-keys config [:width :height :command-duration-ms]))
+    (png/listen! state config)
     (alter-var-root #'server
                     (fn [_]
-                      (httpkit/run-server (partial #'handler config)
+                      (httpkit/run-server (params/wrap-params
+                                           (partial #'handler config))
                                           {:ip ip :port port
                                            :thread 32})))))

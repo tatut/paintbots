@@ -5,4 +5,8 @@
  :command-duration-ms 100
 
  ;; Canvas size
- :width 150 :height 100}
+ :width 150 :height 100
+
+ ;; How often to take a PNG snapshot
+ :png {:interval 1000 :prefix "art_"}
+ }
