@@ -10,22 +10,23 @@
 
 (defn create-img [{:keys [width height canvas name]
                    :or {name "unnamed art"}}]
-  (let [img (BufferedImage. (* 4 width) (+ (* 4 height) 30) BufferedImage/TYPE_INT_ARGB)
+  (let [img (BufferedImage. width (+ height 30) BufferedImage/TYPE_INT_ARGB)
         ^Graphics2D g (.createGraphics img)
         ->col (memoize (fn [[r g b]]
                          (.getRGB (Color. ^int r ^int g ^int b))))]
     (doseq [x (range width)
             y (range height)
             :let [c (some-> canvas (get [x y]) ->col)]
-            :when c
-            rx (range (* x 4) (+ (* x 4) 4))
-            ry (range (* y 4) (+ (* y 4) 4))]
-      (.setRGB img rx ry c))
+            :when c]
+      (.setRGB img x y c))
     (.setColor g Color/BLACK)
     (.drawString g
                  (str name "    " (java.util.Date.))
                  10 (int (+ (* 4 height) 20)))
     img))
+
+(defn png-to [^BufferedImage img ^java.io.OutputStream out]
+  (ImageIO/write img "png" out))
 
 (defn png
   ([state] (png "art_" state))

@@ -2,13 +2,14 @@
 
 Simple scripts that use the paintbots API to draw stuff.
 
-Bots use the `PAINTBOTS` environment variable to read the URL
-of the server.
+Bots use the `PAINTBOTS_URL` environment variable to read the URL
+of the server. The ID of a registered bot is set to `PAINTBOTS_ID`
+environment variable.
 
 Example:
 ```shell
 export PAINTBOTS_URL="https://localhost:31173"
-export PAINTBOTS_NAME="MazeBot"
+export PAINTBOTS_ID=`./register.sh MazeBot`
 # Draw a simple maze
 ./line.sh RIGHT 2
 ./line.sh UP 2

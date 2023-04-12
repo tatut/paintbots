@@ -38,3 +38,18 @@ move() {
     check_id
     post "id=$PAINTBOTS_ID&move=$1";
 }
+
+color() {
+    check_id
+    post "id=$PAINTBOTS_ID&color=$1";
+}
+
+say() {
+    MSG="$@"
+    check_id
+    check_url
+    curl -H "Content-Type: application/x-www-form-urlencoded" \
+         --data-urlencode "id=$PAINTBOTS_ID" \
+         --data-urlencode "msg=$MSG" \
+         $PAINTBOTS_URL
+}
