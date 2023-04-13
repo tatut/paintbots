@@ -1,4 +1,4 @@
-import axios, {AxiosResponse} from 'axios';
+import axios from 'axios';
 import {Pixel} from './types/Pixel';
 
 const API_URL = 'http://localhost:31173/';
@@ -16,7 +16,6 @@ export const registerBot = async (name: string): Promise<string> => {
         }
     }
 };
-
 
 const parsePixelResponse = (response: string): Pixel => {
     const params = response.split('&');
@@ -100,7 +99,7 @@ export const say = async (id: string, message: string): Promise<Pixel> => {
     }
 };
 
-export const lookAround = async (id: string): Promise<Pixel> => {
+export const look = async (id: string): Promise<Pixel> => {
     try {
         const response = await axios.post(`${API_URL}`, `id=${id}`);
 
@@ -108,7 +107,7 @@ export const lookAround = async (id: string): Promise<Pixel> => {
     } catch (e) {
         if (axios.isAxiosError(e)) {
             const errResp = e.response;
-            throw Error(`Failed to say look around: ${errResp?.data}`)
+            throw Error(`Failed to say look: ${errResp?.data}`)
         } else {
             throw e;
         }

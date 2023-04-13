@@ -1,26 +1,29 @@
 import * as api from './Api'
 import {registerBot} from './util'
+import {Bot} from "./types/Bot";
 
 const botName = "MyBot";
 const botColor = "#FF004D";
 
-export async function main() {
-    const bot = await registerBot(botName);
-    console.log(bot);
-    await api.moveBot(bot.id, "RIGHT");
-    const pixel = await api.paintPixel(bot.id);
 
-    /*const bot = {
-        id: botId,
-        name: botName,
-        color: botColor,
-        position: {
-            x: pixel.position.x,
-            y: pixel.position.y
+
+const drawRectangle = async (bot: Bot, width: number): Promise<Bot> => {
+    const dirs = ['RIGHT', 'DOWN', 'LEFT', 'UP'];
+
+    for (const dir of dirs) {
+        for (let i = 0; i < width; i++) {
+            await api.moveBot(bot.id, dir);
+            await api.paintPixel(bot.id);
         }
     }
+
+    return bot;
+};
+
+export async function main() {
+    let bot = await registerBot(botName);
+    bot = await drawRectangle(bot, 5);
     console.log(bot);
-    */
 }
 
 if (require.main === module) {
