@@ -9,6 +9,8 @@
             [clojure.java.io :as io]
             [ripley.live.source :as source]
             [ripley.live.poll :as poll]
+            [ripley.live.protocols :as p]
+            [ripley.impl.dynamic :as dynamic]
             [paintbots.png :as png]
             [paintbots.state :as state])
   (:import (java.awt.image BufferedImage)
@@ -105,7 +107,10 @@
   (bot-command
    req
    (fn [{:keys [msg]} bot _img]
-     (assoc bot :msg msg))))
+     (let [msg (if (> (count msg) 100)
+                 (subs msg 0 100)
+                 msg)]
+       (assoc bot :msg msg)))))
 
 (def ->col (memoize (fn [[r g b]]
                       (.getRGB (Color. ^int r ^int g ^int b)))))
@@ -172,6 +177,7 @@
       ]]
 
     [:div.navbar-end
+     [:button.btn.btn-sm.mx-2 {:on-click "toggleBots()"} "toggle bots"]
      [:button.btn.btn-sm.mx-2 {:on-click #(println "FIXME")} "admin: clear"]
      ]]))
 
@@ -182,31 +188,39 @@
   (let [canvas-name (canvas-of req)
         state-source (poll/poll-source 1000 #(state/current-state))
         canvas-changed (source/computed #(get-in % [:canvas canvas-name :last-command]) state-source)
-        bots (source/computed #(get-in % [:canvas canvas-name :bots]) state-source)]
+        bots (source/computed #(get-in % [:canvas canvas-name :bots]) state-source)
+        resize-callback (p/register-callback! dynamic/*live-context*
+                                              (fn [& args]
+                                                (println "resize callback: " (pr-str args))))]
     (h/out! "<!DOCTYPE html>\n")
     (h/html
      [:html {:data-theme "dracula"}
       [:head
        [:meta {:charset "UTF-8"}]
        [:link {:rel "stylesheet" :href "/paintbots.css"}]
-       (h/live-client-script "/ws")]
+       (h/live-client-script "/ws")
+       [:script {:type "text/javascript"}
+        "function toggleBots() { let b = document.querySelector('#bot-positions'); b.style.display = b.style.display == '' ? 'none' : ''; }; "
+        "window.addEventListener('resize', (event) => {_rs(" resize-callback ", [document.querySelector('#gfx').width])})"]
+       [:style
+        "#gfx { image-rendering: pixelated; width: 100%; position: absolute; }"]]
       [:body
        (app-bar)
        [:div.page
         [::h/live bots
          (fn [bots]
            (h/html
-            [:div.bots
-             "Connected bots: "
+            [:div.bots.flex.flex-row
+             "Painters: "
              [::h/for [{n :name c :color m :msg} (vals bots)
                        :let [col-style (str "width: 16px; height: 16px; "
                                             "position: absolute; left: 2px; top: 2px;"
                                             "background-color: " (rgb c) ";")]]
-              [:div.relative.pl-5 n [:div.inline {:style col-style}]
+              [:div.inline.relative.ml-5.pl-5 n [:div.inline {:style col-style}]
                [::h/when m
                 [:q.italic.mx-4 m]]]]]))]
 
-        [:div.border
+        [:div
          [::h/live canvas-changed
           (fn [_ts]
             (with-open [out (java.io.ByteArrayOutputStream.)]
@@ -215,11 +229,24 @@
                     b64 (.encodeToString (java.util.Base64/getEncoder) b)
                     src (str "data:image/png;base64," b64)]
                 (h/html
-                 [:img {:src src :style "image-rendering: pixelated; width: 100%;"}])))
+                 [:img {:id "gfx" :src src}])))
             ;; This works, but has flicker!
             #_(let [url (str "/" canvas-name ".png?_=" ts)]
                 (h/html
-                 [:img {:style "width: 100%;" :src url}])))]]]]])))
+                 [:img {:style "width: 100%;" :src url}])))]
+         [:svg#bot-positions {:viewBox (str "0 0 " width " " height)}
+          [::h/live bots
+           (fn [bots]
+             (def *b bots)
+             (let [bots (vals bots)
+                   s (pr-str bots)]
+               (h/html
+                [:g.bots
+                 [::h/for [{:keys [x y color name]} bots
+                           :let [c (apply format "#%02x%02x%02x" color)]]
+                  [:g
+                   [:text {:x (- x 2) :y (- y 2.5) :font-size 2 :fill "white"} name]
+                   [:circle {:cx (+ 0.5 x) :cy (+ 0.5 y) :r 2 :stroke c :stroke-width 0.25}]]]])))]]]]]])))
 
 (defn handle-post [req]
   (let [{p :form-params :as req}

@@ -1,13 +1,6 @@
-# Simple example bots
+# Simple shell script bot example
 
-This folder contains example bot implementations.
-
-* `shell` contains bash scripts using curl
-* `python` a python example
-* `node` a node javascript example
-
-
-Simple scripts that use the paintbots API to draw stuff.
+Simple shell scripts that use the paintbots API to draw stuff.
 
 Bots use the `PAINTBOTS_URL` environment variable to read the URL
 of the server. The ID of a registered bot is set to `PAINTBOTS_ID`
