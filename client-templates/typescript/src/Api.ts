@@ -1,5 +1,6 @@
 import axios from 'axios';
-import {Pixel} from './types/Pixel';
+import {Bot} from "./types/Bot";
+import {Pixel} from "./types/Pixel";
 
 const API_URL = 'http://localhost:31173/';
 
@@ -18,17 +19,35 @@ export const registerBot = async (name: string): Promise<string> => {
 };
 
 const parsePixelResponse = (response: string): Pixel => {
-    const params = response.split('&');
-    const pixel = Object.fromEntries(params.map(el => el.split('=')));
+    const params = new URLSearchParams(response);
+    let color, x, y;
 
-    return {color: pixel.color, position: {x: pixel.x, y: pixel.y}}
+    console.log(response, params)
+
+    if (params.get('color')) {
+        color = parseInt(<string>params.get('color'));
+    }
+
+    if (params.get('x')) {
+        x = parseInt(<string>params.get('x'));
+    }
+
+    if (params.get('color')) {
+        y = parseInt(<string>params.get('color'));
+    }
+
+    if (!color || !x || !y) {
+        throw Error('Unable to parse pixel response!');
+    }
+
+    return {color, position: {x, y}}
 };
 
-export const moveBot = async (id: string, dir: string): Promise<Pixel> => {
+export const moveBot = async (bot: Bot, dir: string): Promise<Bot> => {
     try {
-        const response = await axios.post(`${API_URL}`, `id=${id}&move=${dir}`);
+        const response = await axios.post(`${API_URL}`, `id=${bot.id}&move=${dir}`);
 
-        return parsePixelResponse(response.data);
+        return {...bot, ...parsePixelResponse(response.data)};
     } catch (e) {
         if (axios.isAxiosError(e)) {
             const errResp = e.response;
@@ -39,11 +58,35 @@ export const moveBot = async (id: string, dir: string): Promise<Pixel> => {
     }
 };
 
-export const setColor = async (id: string, color: string): Promise<Pixel> => {
+/**
+ *
+ * ;; pico-8 16 color palette from https://www.pixilart.com/palettes/pico-8-51001
+ * 0 "#000000"
+ * 1 "#1D2B53"
+ * 2 "#7E2553"
+ * 3 "#008751"
+ * 4 "#AB5236"
+ * 5 "#5F574F"
+ * 6 "#C2C3C7"
+ * 7 "#FFF1E8"
+ * 8 "#FF004D"
+ * 9 "#FFA300"
+ * 10 "#FFEC27"
+ * 11 "#00E436"
+ * 12 "#29ADFF"
+ * 13 "#83769C"
+ * 14 "#FF77A8"
+ * 15 "#FFCCAA"
+ *
+ * @param bot
+ * @param color
+ *
+ */
+export const setColor = async (bot: Bot, color: number): Promise<Bot> => {
     try {
-        const response = await axios.post(`${API_URL}`, `id=${id}&move=${color}`);
+        const response = await axios.post(`${API_URL}`, `id=${bot.id}&color=${color}`);
 
-        return parsePixelResponse(response.data);
+        return {...bot, ...parsePixelResponse(response.data)};
     } catch (e) {
         if (axios.isAxiosError(e)) {
             const errResp = e.response;
@@ -54,11 +97,11 @@ export const setColor = async (id: string, color: string): Promise<Pixel> => {
     }
 };
 
-export const paintPixel = async (id: string): Promise<Pixel> => {
+export const paintPixel = async (bot: Bot): Promise<Bot> => {
     try {
-        const response = await axios.post(`${API_URL}`, `id=${id}&paint`);
+        const response = await axios.post(`${API_URL}`, `id=${bot.id}&paint`);
 
-        return parsePixelResponse(response.data);
+        return {...bot, ...parsePixelResponse(response.data)};
     } catch (e) {
         if (axios.isAxiosError(e)) {
             const errResp = e.response;
@@ -69,11 +112,11 @@ export const paintPixel = async (id: string): Promise<Pixel> => {
     }
 };
 
-export const clearPixel = async (id: string): Promise<Pixel> => {
+export const clearPixel = async (bot: Bot): Promise<Bot> => {
     try {
-        const response = await axios.post(`${API_URL}`, `id=${id}`);
+        const response = await axios.post(`${API_URL}`, `id=${bot.id}`);
 
-        return parsePixelResponse(response.data);
+        return {...bot, ...parsePixelResponse(response.data)};
     } catch (e) {
         if (axios.isAxiosError(e)) {
             const errResp = e.response;
@@ -84,11 +127,11 @@ export const clearPixel = async (id: string): Promise<Pixel> => {
     }
 };
 
-export const say = async (id: string, message: string): Promise<Pixel> => {
+export const say = async (bot: Bot, message: string): Promise<Bot> => {
     try {
-        const response = await axios.post(`${API_URL}`, `id=${id}&msg=${message}`);
+        const response = await axios.post(`${API_URL}`, `id=${bot.id}&msg=${message}`);
 
-        return parsePixelResponse(response.data);
+        return {...bot, ...parsePixelResponse(response.data)};
     } catch (e) {
         if (axios.isAxiosError(e)) {
             const errResp = e.response;
@@ -99,11 +142,11 @@ export const say = async (id: string, message: string): Promise<Pixel> => {
     }
 };
 
-export const look = async (id: string): Promise<Pixel> => {
+export const look = async (bot: Bot): Promise<Bot> => {
     try {
-        const response = await axios.post(`${API_URL}`, `id=${id}`);
+        const response = await axios.post(`${API_URL}`, `id=${bot.id}`);
 
-        return parsePixelResponse(response.data);
+        return {...bot, ...parsePixelResponse(response.data)};
     } catch (e) {
         if (axios.isAxiosError(e)) {
             const errResp = e.response;

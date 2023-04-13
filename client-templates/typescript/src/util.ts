@@ -52,3 +52,13 @@ export const registerBot = async (botName: string): Promise<Bot> => {
         id,
     };
 };
+
+export const moveBot = async (bot: Bot, dir: string, dist: number): Promise<Bot> => {
+    let result = bot;
+
+    for (let i = 0; i < dist; i++) {
+        result = await api.moveBot(bot, dir)
+    }
+
+    return result;
+};
