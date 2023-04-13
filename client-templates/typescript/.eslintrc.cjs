@@ -14,6 +14,7 @@ module.exports = {
         es2022: true,
     },
     rules: {
+        "eol-last": ["error", "always"],
         "@typescript-eslint/no-non-null-assertion": 0,
         "@typescript-eslint/explicit-module-boundary-types": 0,
     },
