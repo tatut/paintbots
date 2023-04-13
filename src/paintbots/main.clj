@@ -185,7 +185,7 @@
         bots (source/computed #(get-in % [:canvas canvas-name :bots]) state-source)]
     (h/out! "<!DOCTYPE html>\n")
     (h/html
-     [:html {:data-theme "light"}
+     [:html {:data-theme "dracula"}
       [:head
        [:meta {:charset "UTF-8"}]
        [:link {:rel "stylesheet" :href "/paintbots.css"}]
@@ -215,7 +215,7 @@
                     b64 (.encodeToString (java.util.Base64/getEncoder) b)
                     src (str "data:image/png;base64," b64)]
                 (h/html
-                 [:img {:src src :style "width: 100%;"}])))
+                 [:img {:src src :style "image-rendering: pixelated; width: 100%;"}])))
             ;; This works, but has flicker!
             #_(let [url (str "/" canvas-name ".png?_=" ts)]
                 (h/html

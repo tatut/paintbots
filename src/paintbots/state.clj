@@ -10,7 +10,41 @@
   (:import (java.awt.image BufferedImage)
            (java.awt Color Graphics2D)))
 
-(def colors {"R" [255 0 0]              ; red
+(defn- hex->rgb [hex]
+  (let [hex (if (= \# (.charAt hex 0)) (subs hex 1) hex)]
+    (mapv #(Integer/parseInt % 16)
+          [(subs hex 0 2)
+           (subs hex 2 4)
+           (subs hex 4 6)])))
+
+(defn- palette [& cols]
+  (into {}
+        (map-indexed
+         (fn [i col]
+           [(Integer/toHexString i) (hex->rgb col)]))
+        cols))
+
+;; pico-8 16 color palette from https://www.pixilart.com/palettes/pico-8-51001
+(def colors
+  (palette "#000000"
+           "#1D2B53"
+           "#7E2553"
+           "#008751"
+           "#AB5236"
+           "#5F574F"
+           "#C2C3C7"
+           "#FFF1E8"
+           "#FF004D"
+           "#FFA300"
+           "#FFEC27"
+           "#00E436"
+           "#29ADFF"
+           "#83769C"
+           "#FF77A8"
+           "#FFCCAA"))
+
+
+#_(def colors {"R" [255 0 0]              ; red
              "G" [0 255 0]              ; green
              "B" [0 0 255]              ; blue
              "Y" [255 255 0]            ; yellow
