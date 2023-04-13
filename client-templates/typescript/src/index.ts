@@ -1,12 +1,14 @@
-import {clearPixel, lookAround, moveBot, paintPixel, registerBot, say, setColor} from './Api'
+import * as api from './Api'
+import {registerBot} from './util'
 
 const botName = "MyBot";
 const botColor = "#FF004D";
 
 export async function main() {
-    const botId = await registerBot(botName);
-    await moveBot(botId, "RIGHT");
-    const pixel = await paintPixel(botId);
+    const bot = await registerBot(botName);
+    console.log(bot);
+    await api.moveBot(bot.id, "RIGHT");
+    const pixel = await api.paintPixel(bot.id);
 
     /*const bot = {
         id: botId,
