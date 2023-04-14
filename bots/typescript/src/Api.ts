@@ -1,12 +1,17 @@
-import axios from 'axios';
+import axios, {AxiosRequestConfig, RawAxiosRequestHeaders} from 'axios';
 import {Bot} from "./types/Bot";
 import {Pixel} from "./types/Pixel";
+import {BotCommand} from "./types/BotCommand";
 
 const API_URL = 'http://localhost:31173/';
 
+const config: AxiosRequestConfig = {
+    headers: {'content-type': 'application/x-www-form-urlencoded'} as RawAxiosRequestHeaders,
+};
+
 export const registerBot = async (name: string): Promise<string> => {
     try {
-        const response = await axios.post(`${API_URL}`, `register=${name}`);
+        const response = await axios.post(API_URL, {register: name}, config);
         return response.data;
     } catch (e) {
         if (axios.isAxiosError(e)) {
@@ -43,19 +48,23 @@ const parsePixelResponse = (response: string): Pixel => {
     return {color, position: {x, y}}
 };
 
-export const moveBot = async (bot: Bot, dir: string): Promise<Bot> => {
+const apiCommand = async (bot: Bot, command: BotCommand, errorMsg: string) => {
     try {
-        const response = await axios.post(`${API_URL}`, `id=${bot.id}&move=${dir}`);
+        const response = await axios.post(API_URL, command, config);
 
         return {...bot, ...parsePixelResponse(response.data)};
     } catch (e) {
         if (axios.isAxiosError(e)) {
             const errResp = e.response;
-            throw Error(`Failed to move bot: ${errResp?.data}`)
+            throw Error(`${errorMsg}: ${errResp?.data}`)
         } else {
             throw e;
         }
     }
+};
+
+export const moveBot = async (bot: Bot, dir: string): Promise<Bot> => {
+    return await apiCommand(bot, {id: bot.id, move: dir}, 'Failed to move bot');
 };
 
 /**
@@ -83,76 +92,21 @@ export const moveBot = async (bot: Bot, dir: string): Promise<Bot> => {
  *
  */
 export const setColor = async (bot: Bot, color: number): Promise<Bot> => {
-    try {
-        const response = await axios.post(`${API_URL}`, `id=${bot.id}&color=${color}`);
-
-        return {...bot, ...parsePixelResponse(response.data)};
-    } catch (e) {
-        if (axios.isAxiosError(e)) {
-            const errResp = e.response;
-            throw Error(`Failed to set color: ${errResp?.data}`)
-        } else {
-            throw e;
-        }
-    }
+    return await apiCommand(bot, {id: bot.id, color}, 'Failed to set color');
 };
 
 export const paintPixel = async (bot: Bot): Promise<Bot> => {
-    try {
-        const response = await axios.post(`${API_URL}`, `id=${bot.id}&paint`);
-
-        return {...bot, ...parsePixelResponse(response.data)};
-    } catch (e) {
-        if (axios.isAxiosError(e)) {
-            const errResp = e.response;
-            throw Error(`Failed to paint: ${errResp?.data}`)
-        } else {
-            throw e;
-        }
-    }
+    return await apiCommand(bot, {id: bot.id, paint: ''}, 'Failed to paint');
 };
 
 export const clearPixel = async (bot: Bot): Promise<Bot> => {
-    try {
-        const response = await axios.post(`${API_URL}`, `id=${bot.id}`);
-
-        return {...bot, ...parsePixelResponse(response.data)};
-    } catch (e) {
-        if (axios.isAxiosError(e)) {
-            const errResp = e.response;
-            throw Error(`Failed to clear a pixel: ${errResp?.data}`)
-        } else {
-            throw e;
-        }
-    }
+    return await apiCommand(bot, {id: bot.id}, 'Failed to clear a pixel');
 };
 
-export const say = async (bot: Bot, message: string): Promise<Bot> => {
-    try {
-        const response = await axios.post(`${API_URL}`, `id=${bot.id}&msg=${message}`);
-
-        return {...bot, ...parsePixelResponse(response.data)};
-    } catch (e) {
-        if (axios.isAxiosError(e)) {
-            const errResp = e.response;
-            throw Error(`Failed to say a message: ${errResp?.data}`)
-        } else {
-            throw e;
-        }
-    }
+export const say = async (bot: Bot, msg: string): Promise<Bot> => {
+    return await apiCommand(bot, {id: bot.id, msg}, 'Failed to say a message');
 };
 
 export const look = async (bot: Bot): Promise<Bot> => {
-    try {
-        const response = await axios.post(`${API_URL}`, `id=${bot.id}`);
-
-        return {...bot, ...parsePixelResponse(response.data)};
-    } catch (e) {
-        if (axios.isAxiosError(e)) {
-            const errResp = e.response;
-            throw Error(`Failed to say look: ${errResp?.data}`)
-        } else {
-            throw e;
-        }
-    }
+    return await apiCommand(bot, {id: bot.id}, 'Failed to say a message');
 };
