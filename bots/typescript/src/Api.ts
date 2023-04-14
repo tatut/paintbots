@@ -27,8 +27,6 @@ const parsePixelResponse = (response: string): Pixel => {
     const params = new URLSearchParams(response);
     let color, x, y;
 
-    console.log(response, params)
-
     if (params.get('color')) {
         color = parseInt(<string>params.get('color'));
     }
