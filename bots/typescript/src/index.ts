@@ -6,6 +6,14 @@ import {Bot} from "./types/Bot";
 const botName = "MyBot";
 // See color palette documentation in api.setColor
 const botColor = 6;
+const sayings = ['Kylän kohoralla komiasti, vaikka mettällä vähän kompuroottooki.',
+    'Kyllä maailma opettaa, jonsei muuta niin hilijaa kävelemähän.',
+    'Olokaa klopit hilijaa siälä porstuas, nyt tuloo runua!',
+    'Hyviä neuvoja sateloo niinku rakehia.',
+    'Minen palijo mitää tee, jos mä jotaki teen, niin mä makaan.',
+    'Nii on jano, notta sylyki pöläjää. 🍺',
+    'Kyllä aika piisaa, kun vain järki kestää.',
+    'Me ei teherä virheitä, vaa ilosii pikku vahinkoi.']
 
 /**
  * Example helper functions for drawing a simple rectangle using the api calls
@@ -30,6 +38,7 @@ const drawRectangle = async (bot: Bot, width: number): Promise<Bot> => {
 export async function main() {
     let bot = await registerBot(botName);
     bot = await api.setColor(bot, botColor)
+    bot = await api.say(bot, sayings[Math.floor(Math.random() * sayings.length)])
 
     // Draw some simple rectangles for example (make your own helper functions for more complex shapes!)
     bot = await drawRectangle(bot, 6);
