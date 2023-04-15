@@ -8,3 +8,5 @@
 /*.mp4
 /bots/node/node_modules/
 /bots/java/target/
+/bots/clojure/.cpcache/
+/bots/clojure/.nrepl-port
