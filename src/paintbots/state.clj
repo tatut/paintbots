@@ -115,12 +115,46 @@
                {:bots {} :img img :gfx gfx})
      :ok]))
 
+
+(defn next-free-start-pos
+  "Split canvas in zones and attempt to find a free zone for a registering bot.
+  If a free zone is found, put the bot around the middle of the free zone.
+  If there are no free zones available, put the bot in a random position on canvas."
+  [canvas-width canvas-height bots]
+  (let [bot-positions (map (juxt :x :y) (vals bots))
+        n-cols 3
+        n-rows 3
+        zone-width (Math/round ^float (/ canvas-width n-cols))
+        zone-height (Math/round ^float (/ canvas-height n-rows))
+        zones (for [col (range n-cols)
+                    row (range n-rows)]
+                ;; [min-x min-y max-x max-y]
+                [(* col zone-width) (* row zone-height)
+                 (* (inc col) zone-width) (* (inc row) zone-height)])
+        ;; Filter out zones that have a bot already
+        free-zones (filter (fn [zone]
+                            (let [[min-x min-y max-x max-y] zone]
+                              (not (some (fn [[bot-x bot-y]]
+                                           (and (<= min-x bot-x max-x) (<= min-y bot-y max-y)))
+                                     bot-positions))))
+                     zones)]
+    (if (seq free-zones)
+      ;; Put the bot around the middle of a free zone. Add some randomness in the position.
+      (let [[min-x min-y max-x max-y] (first free-zones)]
+        {:x (+ min-x (/ (- max-x min-x) 2) (rand-int 5))
+         :y (+ min-y (/ (- max-y min-y) 2) (rand-int 5))})
+      ;; No free zones available, return a random position.
+      {:x (rand-int canvas-width)
+       :y (rand-int canvas-height)})))
+
 (defmethod process! :register [{:keys [width height] :as state} {:keys [canvas name]}]
   (let [id (str (random-uuid))
+        bots (get-in (:canvas state) [canvas :bots])
+        free-start-pos (next-free-start-pos width height bots)
         new-state (assoc-in state [:canvas canvas :bots id]
                             {:name name
-                             :x (rand-int width)
-                             :y (rand-int height)
+                             :x (:x free-start-pos)
+                             :y (:y free-start-pos)
                              :color (rand-nth (vals colors))
                              :registered-at (java.util.Date.)})]
     [new-state id]))
