@@ -52,7 +52,12 @@ export async function main() {
   bot = await drawRectangle(bot, 2);
   bot = await moveBot(bot, "RIGHT", 8);
 
-  console.log(bot);
+  console.log(
+    `Current bot position: ${bot.position?.x},${bot.position?.y} and current bot color: ${bot.color}`
+  );
+
+  // Print the current state of canvas in ASCII
+  // console.log(await api.look(bot))
 }
 
 if (require.main === module) {
