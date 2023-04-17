@@ -141,8 +141,8 @@
     (if (seq free-zones)
       ;; Put the bot around the middle of a free zone. Add some randomness in the position.
       (let [[min-x min-y max-x max-y] (first free-zones)]
-        {:x (+ min-x (/ (- max-x min-x) 2) (rand-int 5))
-         :y (+ min-y (/ (- max-y min-y) 2) (rand-int 5))})
+        {:x (int (+ min-x (Math/floor (/ (- max-x min-x) 2)) (rand-int 5)))
+         :y (int (+ min-y (Math/floor (/ (- max-y min-y) 2)) (rand-int 5)))})
       ;; No free zones available, return a random position.
       {:x (rand-int canvas-width)
        :y (rand-int canvas-height)})))
