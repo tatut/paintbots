@@ -10,13 +10,10 @@ class Bot:
         self.color = None
         self.x = None
         self.y = None
-        # The colour of the pixel the bot is on
-        self.pixel_color = None
 
-    def __set_position_and_pixel_color(self, response):
+    def __set_position(self, response):
         self.x = response['x']
         self.y = response['y']
-        self.pixel_color = response['color']
 
     async def set_color(self, color: int):
         """
@@ -28,30 +25,28 @@ class Bot:
         self.color = color
 
         response = await api.set_color(self.session, self.bot_id, color)
-        self.__set_position_and_pixel_color(response)
+        self.__set_position(response)
 
         return self
 
     async def paint_pixel(self):
         response = await api.paint_pixel(self.session, self.bot_id)
 
-        self.__set_position_and_pixel_color(response)
+        self.__set_position(response)
 
         return self
 
     async def clear_pixel(self):
         await api.clear_pixel(self.session, self.bot_id)
 
-        # Clear pixel does not return position or color
-        # Current pixel will be removed on the server, so its color will be set to None here
-        self.pixel_color = None
+        # Clear pixel does not return position, so it will be not set here
 
         return self
 
     async def say(self, msg: str):
         response = await api.say(self.session, self.bot_id, msg)
 
-        self.__set_position_and_pixel_color(response)
+        self.__set_position(response)
 
         return self
 
@@ -60,7 +55,7 @@ class Bot:
         for i in range(dist):
             response = await api.move_bot(self.session, self.bot_id, direction)
 
-        self.__set_position_and_pixel_color(response)
+        self.__set_position(response)
 
         return self
 

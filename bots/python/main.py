@@ -5,7 +5,7 @@ from util import register_bot
 
 # Name to be registered. Must be unique in the drawing board.
 bot_name = "MyBot"
-# See color palette documentation in api.setColor
+# See color palette documentation in api.set_color
 bot_color = 6
 sayings = [
     "Leoka pystyyn kun tulloo kova paekka, pyssyypähän aenae suu kiinni.",
@@ -34,11 +34,12 @@ async def main():
         await bot.draw_rectangle(6)
         await bot.move_bot("RIGHT", 4)
         await bot.draw_rectangle(2)
+        await bot.move_bot("RIGHT", 8)
 
-        print(f"Current bot position: {bot.x},{bot.y} and current pixel color: {bot.pixel_color}")
+        print(f"Current bot position: {bot.x},{bot.y} and current bot color: {bot.color}")
 
-        # Print the current canvas
-        print(await bot.look())
+        # Print the current state of the canvas
+        # print(await bot.look())
 
 
 if __name__ == '__main__':

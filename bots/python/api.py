@@ -58,6 +58,24 @@ async def move_bot(session, bot_id, direction):
     return await api_command(session, {'id': bot_id, 'move': direction}, "Failed to move bot")
 
 
+# pico-8 16 color palette from https://www.pixilart.com/palettes/pico-8-51001
+# 0 "#000000"
+# 1 "#1D2B53"
+# 2 "#7E2553"
+# 3 "#008751"
+# 4 "#AB5236"
+# 5 "#5F574F"
+# 6 "#C2C3C7"
+# 7 "#FFF1E8"
+# 8 "#FF004D"
+# 9 "#FFA300"
+# 10 "#FFEC27"
+# 11 "#00E436"
+# 12 "#29ADFF"
+# 13 "#83769C"
+# 14 "#FF77A8"
+# 15 "#FFCCAA"
+
 async def set_color(session, bot_id, color):
     return await api_command(session, {'id': bot_id, 'color': color}, "Failed to set color")
 
