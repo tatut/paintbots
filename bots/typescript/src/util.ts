@@ -50,6 +50,8 @@ export const registerBot = async (botName: string): Promise<Bot> => {
     await storeBotConfig(botName, id);
   }
 
+  console.log(`Registered bot: ${botName} with id: ${id}`);
+
   return {
     name: botName,
     id,

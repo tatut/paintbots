@@ -3,5 +3,7 @@ export interface BotCommand {
   color?: number;
   move?: string;
   paint?: string;
+  clear?: string;
+  look?: string;
   msg?: string;
 }

@@ -3,7 +3,7 @@ import { Bot } from "./types/Bot";
 import { Pixel } from "./types/Pixel";
 import { BotCommand } from "./types/BotCommand";
 
-const API_URL = "http://localhost:31173/";
+const API_URL = process.env.API_URL || "http://localhost:31173/";
 
 const config: AxiosRequestConfig = {
   headers: {
@@ -14,11 +14,38 @@ const config: AxiosRequestConfig = {
 export const registerBot = async (name: string): Promise<string> => {
   try {
     const response = await axios.post(API_URL, { register: name }, config);
+    console.log(`Got bot id from server: ${response.data}`);
+
     return response.data;
   } catch (e) {
     if (axios.isAxiosError(e)) {
       const errResp = e.response;
-      throw Error(`Failed to register bot: ${errResp?.data}`);
+      const msg = errResp?.data || e.message
+
+      throw Error(`Failed to register bot: ${msg}`);
+    } else {
+      throw e;
+    }
+  }
+};
+
+/**
+ * Returns an ascii representation of the current canvas.
+ */
+export const look = async (bot: Bot): Promise<Bot> => {
+  try {
+    const response = await axios.post(
+      API_URL,
+      { id: bot.id, look: "" },
+      config
+    );
+    return response.data;
+  } catch (e) {
+    if (axios.isAxiosError(e)) {
+      const errResp = e.response;
+      const msg = errResp?.data || e.message
+
+      throw Error(`Failed to look: ${msg}`);
     } else {
       throw e;
     }
@@ -56,7 +83,9 @@ const apiCommand = async (bot: Bot, command: BotCommand, errorMsg: string) => {
   } catch (e) {
     if (axios.isAxiosError(e)) {
       const errResp = e.response;
-      throw Error(`${errorMsg}: ${errResp?.data}`);
+      const msg = errResp?.data || e.message
+
+      throw Error(`${errorMsg}: ${msg}`);
     } else {
       throw e;
     }
@@ -100,13 +129,13 @@ export const paintPixel = async (bot: Bot): Promise<Bot> => {
 };
 
 export const clearPixel = async (bot: Bot): Promise<Bot> => {
-  return await apiCommand(bot, { id: bot.id }, "Failed to clear a pixel");
+  return await apiCommand(
+    bot,
+    { id: bot.id, clear: "" },
+    "Failed to clear a pixel"
+  );
 };
 
 export const say = async (bot: Bot, msg: string): Promise<Bot> => {
   return await apiCommand(bot, { id: bot.id, msg }, "Failed to say a message");
-};
-
-export const look = async (bot: Bot): Promise<Bot> => {
-  return await apiCommand(bot, { id: bot.id }, "Failed to say a message");
 };
