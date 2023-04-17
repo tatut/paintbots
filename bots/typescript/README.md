@@ -10,11 +10,13 @@ Tested with Node.js version 18.14.0
 ## Set up the API url and bot name
 
 1. If you need to change the API base URL, edit the `API_URL` variable in `types/Api.ts` before running the bot
+   * Or, use API_URL environment variable when running the bot 
 2. Change the bot name in `index.ts`
 
 ## Running the bot
 
-Run the script with `$ npm start`  
+Run the script with `$ npm start`
+Or, with `$ API_URL="http://your-url.com" npm start`
 There are other helpful commands you can use while developing the bot. Check them out in `package.json`.
 
 ## Problems with registering the bot?

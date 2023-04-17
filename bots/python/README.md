@@ -9,12 +9,14 @@ Tested with python 3.8.10.
 2. Change the bot name in `main.py`
 
 ## Install deps
-1. Setup and activate venv
-3. Install deps in requirements.txt
+1. Setup venv
+2. Activate venv `$ source <project root>/venv/bin/activate`
+3. Install requirements.txt deps in venv: `$ pip install -r requirements.txt`
 
 ## Running the bot
 
 Run the script with `$ python -u main.py`  
+Or, with `$ API_URL="http://your-url.com" python -u main.py`
 
 ## Problems with registering the bot?
 

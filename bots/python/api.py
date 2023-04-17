@@ -1,6 +1,7 @@
 import urllib.parse
+import os
 
-API_URL = 'http://localhost:31173/'
+API_URL = os.getenv('API_URL', 'http://localhost:31173/')
 headers = {'content-type': 'application/x-www-form-urlencoded'}
 
 
@@ -49,7 +50,7 @@ async def api_command(session, command, error_msg):
             response = await resp.text()
             # print(command, response)
 
-            return parse_position_response(await resp.text())
+            return parse_position_response(response)
     except Exception as e:
         raise Exception(f"{error_msg}: {e}")
 

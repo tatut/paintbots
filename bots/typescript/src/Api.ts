@@ -3,7 +3,7 @@ import { Bot } from "./types/Bot";
 import { Pixel } from "./types/Pixel";
 import { BotCommand } from "./types/BotCommand";
 
-const API_URL = "http://localhost:31173/";
+const API_URL = process.env.API_URL || "http://localhost:31173/";
 
 const config: AxiosRequestConfig = {
   headers: {
@@ -20,7 +20,9 @@ export const registerBot = async (name: string): Promise<string> => {
   } catch (e) {
     if (axios.isAxiosError(e)) {
       const errResp = e.response;
-      throw Error(`Failed to register bot: ${errResp?.data}`);
+      const msg = errResp?.data || e.message
+
+      throw Error(`Failed to register bot: ${msg}`);
     } else {
       throw e;
     }
@@ -41,7 +43,9 @@ export const look = async (bot: Bot): Promise<Bot> => {
   } catch (e) {
     if (axios.isAxiosError(e)) {
       const errResp = e.response;
-      throw Error(`Failed to look: ${errResp?.data}`);
+      const msg = errResp?.data || e.message
+
+      throw Error(`Failed to look: ${msg}`);
     } else {
       throw e;
     }
@@ -79,7 +83,9 @@ const apiCommand = async (bot: Bot, command: BotCommand, errorMsg: string) => {
   } catch (e) {
     if (axios.isAxiosError(e)) {
       const errResp = e.response;
-      throw Error(`${errorMsg}: ${errResp?.data}`);
+      const msg = errResp?.data || e.message
+
+      throw Error(`${errorMsg}: ${msg}`);
     } else {
       throw e;
     }
