@@ -44,6 +44,11 @@ color() {
     post "id=$PAINTBOTS_ID&color=$1";
 }
 
+clear() {
+    check_id
+    post "id=$PAINTBOTS_ID&clear";
+}
+
 say() {
     MSG="$@"
     check_id

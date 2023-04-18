@@ -124,15 +124,15 @@
        (.setRGB img x y (->col color)))
      bot)))
 
-(defn clear [req]
-  (bot-command
-   req
-   (fn [state {:keys [id]}]
-     (let [{:keys [x y]} (get-in state [:bots id])
-           ]
-       ;; clear! gfx
-       ))
-   ))
+(let [clear-color 0]
+  (defn clear [req]
+    (bot-command
+     req
+     (fn [_state {:keys [x y] :as bot} ^BufferedImage img]
+       (when (and (< -1 x (.getWidth img))
+                  (< -1 y (.getHeight img)))
+         (.setRGB img x y clear-color))
+       bot))))
 
 
 (defn bye [{{:keys [id]} :form-params :as req}]
