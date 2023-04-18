@@ -71,7 +71,7 @@
 (defonce state-processor-ch
   (let [ch (async/chan 32)]
     (go-loop [cmd (<! ch)]
-      (println "GOT: " (pr-str cmd))
+      ;;(println "GOT: " (pr-str cmd))
       (if (= cmd ::stop)
         (println "Stop command issued, bye!")
         (let [{reply-ch ::reply} cmd
@@ -158,6 +158,12 @@
                              :color (rand-nth (vals colors))
                              :registered-at (java.util.Date.)})]
     [new-state id]))
+
+(defmethod process! :deregister [old-state {:keys [canvas id] :as args}]
+
+  [(if (get-in old-state [:canvas canvas :bots id])
+     (update-in old-state [:canvas canvas :bots] dissoc id)
+     old-state) :ok])
 
 (defmethod process! :in-bot-command [state {:keys [canvas id]}]
   [(assoc-in state [:canvas canvas :bots id :in-command?] true)

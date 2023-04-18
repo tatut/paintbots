@@ -134,6 +134,13 @@
        ))
    ))
 
+
+(defn bye [{{:keys [id]} :form-params :as req}]
+  (state/cmd-sync! :deregister
+                   :canvas (canvas-of req)
+                   :id id)
+  {:status 204})
+
 (def from-col
   (memoize
    (fn [rgb]
@@ -248,38 +255,32 @@
                    [:text {:x (- x 2) :y (- y 2.5) :font-size 2 :fill "white"} name]
                    [:circle {:cx (+ 0.5 x) :cy (+ 0.5 y) :r 2 :stroke c :stroke-width 0.25}]]]])))]]]]]])))
 
+(def command-handlers
+  [[:register #'register]
+   [:move #'move]
+   [:paint #'paint]
+   [:color #'change-color]
+   [:msg #'say]
+   [:clear #'clear]
+   [:look #'look]
+   [:bye #'bye]])
+
 (defn handle-post [req]
   (let [{p :form-params :as req}
         (update req :form-params
                 #(into {}
-                      (map (fn [[k v]]
-                             [(keyword k) v]))
-                      %))]
-    (cond
-      (contains? p :register)
-      (register req)
+                       (map (fn [[k v]]
+                              [(keyword k) v]))
+                       %))
+        cmd-handler (some (fn [[required-param handler-fn]]
+                            (when (contains? p required-param)
+                              handler-fn))
+                          command-handlers)]
 
-      (contains? p :move)
-      (move req)
-
-      (contains? p :paint)
-      (paint req)
-
-      (contains? p :color)
-      (change-color req)
-
-      (contains? p :msg)
-      (say req)
-
-      (contains? p :clear)
-      (clear req)
-
-      (contains? p :look)
-      (look req)
-
-      :else
-      {:status 404
-       :body "I don't recognize those parameters, try something else."})))
+    (or (when cmd-handler
+          (cmd-handler req))
+        {:status 404
+         :body "I don't recognize those parameters, try something else."})))
 
 (let [ws-handler (context/connection-handler "/ws" :ping-interval 45)]
   (defn handler [config {m :request-method uri :uri :as req}]

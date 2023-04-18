@@ -9,5 +9,7 @@ public class Main {
             b.move(Bot.Dir.LEFT);
             b.paint();
         }
+        b.bye();
+        System.exit();
     }
 }

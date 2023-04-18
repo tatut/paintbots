@@ -24,9 +24,9 @@ the server. See bots folder `_utils.sh` on how it uses curl to post commands.
 | paint    | id=ID           | paint the current position with the current color                                       |
 | color    | id=ID&color=COL | set the current color to COL, which is one of 0-f (16 color palette)                    |
 | msg      | id=ID&msg=MSG   | say MSG, displays the message along with your name in the UI                            |
-| clear    | id=ID           | clear the pixel at current position                                                     |
+| clear    | id=ID&clear     | clear the pixel at current position                                                     |
 | look     | id=ID           | look around, returns ascii containing the current image (with colors as above)          |
-|          |                 |                                                                                         |
+| bye      | id=ID&bye       | deregister this bot (id no longer is usable and name can be reused)                     |
 
 Register command returns just the ID (as plain text) for future use. All other commands return your
 bot's current position and color.
