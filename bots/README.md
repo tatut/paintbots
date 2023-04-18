@@ -4,7 +4,10 @@ This folder contains example bot implementations.
 
 * `shell` contains bash scripts using curl
 * `python` a python example
-* `node` a node javascript example
+* `node` a simple Node JavaScript example
+* `typescript` a more complex Node TypeScript example
+* `clojure` a Clojure example
+* `java` a simple Java skeleton
 
 
 Simple scripts that use the paintbots API to draw stuff.
