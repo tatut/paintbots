@@ -5,7 +5,7 @@ Tested with python 3.8.10.
 ## Set up the API url and bot name
 
 1. If you need to change the API base URL, edit the `API_URL` variable in `api.py` before running the bot
-   * Or, use API_URL environment variable when running the python script
+   * Or, use PAINTBOTS_URL environment variable when running the python script
 2. Change the bot name in `main.py`
 
 ## Install deps
@@ -16,7 +16,7 @@ Tested with python 3.8.10.
 ## Running the bot
 
 Run the script with `$ python -u main.py`  
-Or, with `$ API_URL="http://your-url.com" python -u main.py`
+Or, with `$ PAINTBOTS_URL="http://your-url.com" python -u main.py`
 
 ## Problems with registering the bot?
 

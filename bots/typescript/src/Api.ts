@@ -3,7 +3,7 @@ import { Bot } from "./types/Bot";
 import { Pixel } from "./types/Pixel";
 import { BotCommand } from "./types/BotCommand";
 
-const API_URL = process.env.API_URL || "http://localhost:31173/";
+const API_URL = process.env.PAINTBOTS_URL || "http://localhost:31173/";
 
 const config: AxiosRequestConfig = {
   headers: {
