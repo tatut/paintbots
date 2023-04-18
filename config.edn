@@ -6,6 +6,7 @@
 
  ;; Canvas size
  :width 160 :height 100
+ :background-logo? true ; show a very cool logo in the canvas background
 
  ;; How often to take a PNG snapshot
  :png {:interval 1000 :prefix "art_"}

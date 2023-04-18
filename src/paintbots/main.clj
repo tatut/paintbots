@@ -191,7 +191,12 @@
 (defn rgb [[r g b]]
   (str "rgb(" r "," g "," b ")"))
 
-(defn page [{:keys [width height] :as _config} req]
+(def background-image-css
+  (str "#canvas::before { content: ''; position: absolute; top: 50; left: 0; width: 100%; height: 100%; "
+        "opacity: 0.1; z-index: -1; background-image: url('/logo.png'); "
+        "background-repeat: no-repeat; background-size: cover; }"))
+
+(defn page [{:keys [width height background-logo?] :as _config} req]
   (let [canvas-name (canvas-of req)
         state-source (poll/poll-source 1000 #(state/current-state))
         canvas-changed (source/computed #(get-in % [:canvas canvas-name :last-command]) state-source)
@@ -210,7 +215,9 @@
         "function toggleBots() { let b = document.querySelector('#bot-positions'); b.style.display = b.style.display == '' ? 'none' : ''; }; "
         "window.addEventListener('resize', (event) => {_rs(" resize-callback ", [document.querySelector('#gfx').width])})"]
        [:style
-        "#gfx { image-rendering: pixelated; width: 100%; position: absolute; }"]]
+        "#gfx { image-rendering: pixelated; width: 100%; position: absolute; } "
+        (when background-logo?
+          (h/out! background-image-css))]]
       [:body
        (app-bar)
        [:div.page
@@ -227,7 +234,7 @@
                [::h/when m
                 [:q.italic.mx-4 m]]]]]))]
 
-        [:div
+        [:div#canvas
          [::h/live canvas-changed
           (fn [_ts]
             (with-open [out (java.io.ByteArrayOutputStream.)]
@@ -297,6 +304,12 @@
         (= uri "/paintbots.css")
         {:status 200
          :body (slurp (io/resource "public/paintbots.css"))}
+
+        (= uri "/logo.png")
+        {:status 200
+         :body (ring-io/piped-input-stream
+                #(with-open [in (io/input-stream (io/resource "public/logo.png"))]
+                   (io/copy in %)))}
 
         ;; Try to download PNG of a canvas
         (str/ends-with? uri ".png")
