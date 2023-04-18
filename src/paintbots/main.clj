@@ -6,6 +6,7 @@
             [clojure.string :as str]
             [ripley.html :as h]
             [ripley.live.context :as context]
+            [ripley.js :as js]
             [clojure.java.io :as io]
             [ripley.live.source :as source]
             [ripley.live.poll :as poll]
@@ -172,21 +173,24 @@
                          (recur y (inc x))))))))
      bot)))
 
-(defn app-bar []
+(defn app-bar [req]
   (h/html
    [:nav.navbar.bg-base-100
     [:div.flex-1
      [:span.font-semibold "PaintBots"]]
 
-    [:div.navbar-start
-     [:ul.menu.menu-compact.lg:menu-horizontal.md:menu-horizontal
-      ;; links here?
-      ]]
+    [:div.navbar-start.ml-4
+     [::h/live (state/source :canvas keys)
+      (fn [canvas-opts]
+        (let [canvas (canvas-of req)]
+          (h/html
+           [:select.select {:on-change "window.location.pathname = window.event.target.value;"}
+            [::h/for [o canvas-opts
+                      :let [selected? (= canvas o)]]
+             [:option {:value o :selected selected?} o]]])))]]
 
     [:div.navbar-end
-     [:button.btn.btn-sm.mx-2 {:on-click "toggleBots()"} "toggle bots"]
-     [:button.btn.btn-sm.mx-2 {:on-click #(println "FIXME")} "admin: clear"]
-     ]]))
+     [:button.btn.btn-sm.mx-2 {:on-click "toggleBots()"} "toggle bots"]]]))
 
 (defn rgb [[r g b]]
   (str "rgb(" r "," g "," b ")"))
@@ -196,6 +200,18 @@
         "opacity: 0.1; z-index: -1; background-image: url('/logo.png'); "
         "background-repeat: no-repeat; background-size: cover; }"))
 
+(defn with-page [head-fn body-fn]
+  (h/out! "<!DOCTYPE html>\n")
+  (h/html
+   [:html {:data-theme "dracula"}
+    [:head
+     [:meta {:charset "UTF-8"}]
+     [:link {:rel "stylesheet" :href "/paintbots.css"}]
+     (h/live-client-script "/ws")
+     (head-fn)]
+    [:body
+     (body-fn)]]))
+
 (defn page [{:keys [width height background-logo?] :as _config} req]
   (let [canvas-name (canvas-of req)
         state-source (poll/poll-source 1000 #(state/current-state))
@@ -204,63 +220,116 @@
         resize-callback (p/register-callback! dynamic/*live-context*
                                               (fn [& args]
                                                 (println "resize callback: " (pr-str args))))]
-    (h/out! "<!DOCTYPE html>\n")
-    (h/html
-     [:html {:data-theme "dracula"}
-      [:head
-       [:meta {:charset "UTF-8"}]
-       [:link {:rel "stylesheet" :href "/paintbots.css"}]
-       (h/live-client-script "/ws")
-       [:script {:type "text/javascript"}
-        "function toggleBots() { let b = document.querySelector('#bot-positions'); b.style.display = b.style.display == '' ? 'none' : ''; }; "
-        "window.addEventListener('resize', (event) => {_rs(" resize-callback ", [document.querySelector('#gfx').width])})"]
-       [:style
-        "#gfx { image-rendering: pixelated; width: 100%; position: absolute; } "
-        (when background-logo?
-          (h/out! background-image-css))]]
-      [:body
-       (app-bar)
-       [:div.page
-        [::h/live bots
-         (fn [bots]
-           (h/html
-            [:div.bots.flex.flex-row
-             "Painters: "
-             [::h/for [{n :name c :color m :msg} (vals bots)
-                       :let [col-style (str "width: 16px; height: 16px; "
-                                            "position: absolute; left: 2px; top: 2px;"
-                                            "background-color: " (rgb c) ";")]]
-              [:div.inline.relative.ml-5.pl-5 n [:div.inline {:style col-style}]
-               [::h/when m
-                [:q.italic.mx-4 m]]]]]))]
+    (with-page
+      ;; head stuff
+      #(do
+         (h/html
+          [:script {:type "text/javascript"}
+           "function toggleBots() { let b = document.querySelector('#bot-positions'); b.style.display = b.style.display == '' ? 'none' : ''; }; "
+           "window.addEventListener('resize', (event) => {_rs(" resize-callback ", [document.querySelector('#gfx').width])})"])
+         (h/html
+          [:style
+           "#gfx { image-rendering: pixelated; width: 100%; position: absolute; } "
+           (when background-logo?
+             (h/out! background-image-css))]))
 
-        [:div#canvas
-         [::h/live canvas-changed
-          (fn [_ts]
-            (with-open [out (java.io.ByteArrayOutputStream.)]
-              (png/png-to (state/canvas-image (state/current-state) canvas-name) out)
-              (let [b (.toByteArray out)
-                    b64 (.encodeToString (java.util.Base64/getEncoder) b)
-                    src (str "data:image/png;base64," b64)]
-                (h/html
-                 [:img {:id "gfx" :src src}])))
-            ;; This works, but has flicker!
-            #_(let [url (str "/" canvas-name ".png?_=" ts)]
-                (h/html
-                 [:img {:style "width: 100%;" :src url}])))]
-         [:svg#bot-positions {:viewBox (str "0 0 " width " " height)}
-          [::h/live bots
-           (fn [bots]
-             (def *b bots)
-             (let [bots (vals bots)
-                   s (pr-str bots)]
-               (h/html
-                [:g.bots
-                 [::h/for [{:keys [x y color name]} bots
-                           :let [c (apply format "#%02x%02x%02x" color)]]
-                  [:g
-                   [:text {:x (- x 2) :y (- y 2.5) :font-size 2 :fill "white"} name]
-                   [:circle {:cx (+ 0.5 x) :cy (+ 0.5 y) :r 2 :stroke c :stroke-width 0.25}]]]])))]]]]]])))
+      ;; page content
+      #(do
+         (app-bar req)
+         (h/html
+          [:div.page
+           [::h/live bots
+            (fn [bots]
+              (h/html
+               [:div.bots.flex.flex-row
+                "Painters: "
+                [::h/for [{n :name c :color m :msg} (vals bots)
+                          :let [col-style (str "width: 16px; height: 16px; "
+                                               "position: absolute; left: 2px; top: 2px;"
+                                               "background-color: " (rgb c) ";")]]
+                 [:div.inline.relative.ml-5.pl-5 n [:div.inline {:style col-style}]
+                  [::h/when m
+                   [:q.italic.mx-4 m]]]]]))]
+
+           [:div#canvas
+            [::h/live canvas-changed
+             (fn [_ts]
+               ;; PENDING: we could optimize by having 1 PNG byte array we send to all
+               ;; connected clients, not generating for each viewer  ¯\_(ツ)_/¯
+               ;; We need to set the src as data: URI because if we set a src that
+               ;; the browser will fetch, there will be flicker on updates.
+               (with-open [out (java.io.ByteArrayOutputStream.)]
+                 (png/png-to (state/canvas-image (state/current-state) canvas-name) out)
+                 (let [b (.toByteArray out)
+                       b64 (.encodeToString (java.util.Base64/getEncoder) b)
+                       src (str "data:image/png;base64," b64)]
+                   (h/html
+                    [:img {:id "gfx" :src src}]))))]
+            [:svg#bot-positions {:viewBox (str "0 0 " width " " height)}
+             [::h/live bots
+              (fn [bots]
+                (let [bots (vals bots)]
+                  (h/html
+                   [:g.bots
+                    [::h/for [{:keys [x y color name]} bots
+                              :let [c (apply format "#%02x%02x%02x" color)]]
+                     [:g
+                      [:text {:x (- x 2) :y (- y 2.5) :font-size 2 :fill "white"} name]
+                      [:circle {:cx (+ 0.5 x) :cy (+ 0.5 y) :r 2 :stroke c :stroke-width 0.25}]]]])))]]]])))))
+
+(defn admin-panel [config req]
+  (h/html
+   [:div.m-4
+
+    [:h2 "Canvases"]
+    [::h/live (state/source :canvas #(for [[name {bots :bots}] %]
+                                       [name (for [[id {name :name}] bots]
+                                               [id name])]))
+     (fn [canvases]
+       (h/html
+        [:div.canvases
+         [::h/for [[canvas-name bots] canvases
+                   :let [img (str "/" canvas-name ".png")]]
+          [:div.card.w-96.bg-base-100.shadow-xl.my-4
+           [:figure [:img {:src img}]]
+           [:div.card-body
+            [:h2.card-title canvas-name]
+            "Bots:"
+            [:ul
+             [::h/for [[id name] bots]
+              [:li name [:button.btn.btn-xs.ml-2 {:on-click #(state/cmd! :deregister {:canvas canvas-name
+                                                                                      :id id})}
+                         "kick"]]]]]
+
+           [:div.card-actions.justify-end
+            [:button.btn.btn-md.btn-warning
+             {:on-click (js/js-when "confirm('Really lose this fine art?')"
+                                    #(state/cmd! :clear-canvas :name canvas-name))} "Clear canvas"]]]]]))]
+
+    [:footer "the secret panel, you got here!"]]))
+
+(defn admin-page [config req]
+  (let [[activated set-activated!] (source/use-state false)
+        activate! (fn [password]
+                    (when (= password "letmein")
+                      (set-activated! true)))]
+    (with-page
+      (constantly nil)
+      #(h/html
+        [:div.admin
+         [::h/live activated
+          (fn [activated]
+            (if activated
+              (admin-panel config req)
+              (h/html
+               [:div.form-control.m-4
+                [:label.label "Yeah. Whatsda passwoid?"]
+                [:input#adminpw
+                 {:type :password
+                  :on-keypress (js/js-when js/enter-pressed?
+                                           activate!
+                                           (js/input-value "adminpw"))}]])))]]))))
+
 
 (def command-handlers
   [[:register #'register]
@@ -291,15 +360,14 @@
 
 (let [ws-handler (context/connection-handler "/ws" :ping-interval 45)]
   (defn handler [config {m :request-method uri :uri :as req}]
-    (def *req req)
     (if (= uri "/ws")
       (ws-handler req)
       (cond
         (= :post m)
         (handle-post req)
 
-        (= uri "/")
-        (h/render-response (partial #'page config req))
+        (= uri "/admin")
+        (h/render-response (partial #'admin-page config req))
 
         (= uri "/paintbots.css")
         {:status 200
@@ -322,10 +390,11 @@
              :body "No such canvas!"}))
 
         :else
-        (do
-          (println "Someone tried: " (pr-str (:uri req)))
-          {:status 404
-           :body "Ain't nothing more here for you, go away!"})))))
+        (if (state/has-canvas? (state/current-state) (canvas-of req))
+          (h/render-response (partial #'page config req))
+          (do (println "Someone tried: " (pr-str (:uri req)))
+              {:status 404
+               :body "Ain't nothing more here for you, go away!"}))))))
 
 (defn -main [& [config-file :as _args]]
   (let [config-file (or config-file "config.edn")

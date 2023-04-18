@@ -2,7 +2,7 @@
  :port 31173
  :ip "0.0.0.0"
  ;; How long does executing a paint command take
- :command-duration-ms 100
+ :command-duration-ms 10 ; make short for local debug
 
  ;; Canvas size
  :width 160 :height 100
@@ -10,4 +10,7 @@
 
  ;; How often to take a PNG snapshot
  :png {:interval 1000 :prefix "art_"}
+
+ ;; Admin config, for the love of all that is good, CHANGE the password before deploying
+ :admin {:password "letmein"}
  }

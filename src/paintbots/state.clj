@@ -6,7 +6,8 @@
   A single go-loop process listens to commands that modify the game state
   and processes them in order."
   (:require [clojure.core.async :refer [go go-loop <! >! timeout] :as async]
-            [clojure.string :as str])
+            [clojure.string :as str]
+            [ripley.live.source :as source])
   (:import (java.awt.image BufferedImage)
            (java.awt Color Graphics2D)))
 
@@ -115,6 +116,10 @@
                {:bots {} :img img :gfx gfx})
      :ok]))
 
+(defmethod process! :clear-canvas [{:keys [width height] :as state} {name :name}]
+  (when-let [gfx (get-in state [:canvas name :gfx])]
+    (.clearRect gfx 0 0 width height))
+  [state :ok])
 
 (defn next-free-start-pos
   "Split canvas in zones and attempt to find a free zone for a registering bot.
@@ -133,11 +138,11 @@
                  (* (inc col) zone-width) (* (inc row) zone-height)])
         ;; Filter out zones that have a bot already
         free-zones (filter (fn [zone]
-                            (let [[min-x min-y max-x max-y] zone]
-                              (not (some (fn [[bot-x bot-y]]
-                                           (and (<= min-x bot-x max-x) (<= min-y bot-y max-y)))
-                                     bot-positions))))
-                     zones)]
+                             (let [[min-x min-y max-x max-y] zone]
+                               (not (some (fn [[bot-x bot-y]]
+                                            (and (<= min-x bot-x max-x) (<= min-y bot-y max-y)))
+                                          bot-positions))))
+                           zones)]
     (if (seq free-zones)
       ;; Put the bot around the middle of a free zone. Add some randomness in the position.
       (let [[min-x min-y max-x max-y] (first free-zones)]
@@ -194,3 +199,11 @@
 
 (defn canvas-image [state canvas-name]
   (get-in state [:canvas canvas-name :img]))
+
+(defn source
+  "Return a ripley live source reflecting the given path.
+  Path-fns may be keywords or other getter functions."
+  [& path-fns]
+  (source/computed (fn [current-state]
+                     (reduce (fn [here f] (f here)) current-state path-fns))
+                   state))
