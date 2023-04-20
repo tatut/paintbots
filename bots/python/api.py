@@ -91,3 +91,7 @@ async def clear_pixel(session, bot_id):
 
 async def say(session, bot_id, msg):
     return await api_command(session, {'id': bot_id, 'msg': msg}, "Failed to say a message")
+
+
+async def bye(session, bot_id):
+    return await api_command(session, {'id': bot_id, 'bye': ''}, "Failed to deregister the bot")

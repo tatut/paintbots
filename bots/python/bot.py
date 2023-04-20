@@ -1,5 +1,6 @@
 import aiohttp
 import api
+import util
 
 
 class Bot:
@@ -14,6 +15,11 @@ class Bot:
     def __set_position(self, response):
         self.x = response['x']
         self.y = response['y']
+
+    async def deregister_bot(self):
+        await util.deregister_bot(self.session, self.bot_id)
+
+        return self
 
     async def set_color(self, color: int):
         """

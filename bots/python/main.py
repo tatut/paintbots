@@ -41,6 +41,11 @@ async def main():
         # Print the current state of the canvas
         # print(await bot.look())
 
+        # Call 'deregister_bot' if you want to remove your bot from the server and, for example, change your bot name.
+        # Your bot key is stored in botConfig.cfg after registration, and it is reused when you run this script again.
+        # The deregister_bot command will remove the botConfig.cfg file automatically.
+        # await bot.deregister_bot()
+
 
 if __name__ == '__main__':
     asyncio.run(main())
