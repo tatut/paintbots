@@ -37,9 +37,9 @@ class Bot:
         return self
 
     async def clear_pixel(self):
-        await api.clear_pixel(self.session, self.bot_id)
+        response = await api.clear_pixel(self.session, self.bot_id)
 
-        # Clear pixel does not return position, so it will be not set here
+        self.__set_position(response)
 
         return self
 

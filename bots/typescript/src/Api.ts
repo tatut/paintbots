@@ -129,10 +129,7 @@ export const paintPixel = async (bot: Bot): Promise<Bot> => {
 };
 
 export const clearPixel = async (bot: Bot): Promise<Bot> => {
-  return await apiCommand(
-    bot,
-    { id: bot.id, clear: "" },
-    "Failed to clear a pixel"
+  return await apiCommand(bot, { id: bot.id, clear: "" }, "Failed to clear a pixel"
   );
 };
 
