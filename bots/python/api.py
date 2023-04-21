@@ -1,7 +1,7 @@
 import urllib.parse
 import os
 
-API_URL = os.getenv('API_URL', 'http://localhost:31173/')
+API_URL = os.getenv('PAINTBOTS_URL', 'http://localhost:31173/')
 headers = {'content-type': 'application/x-www-form-urlencoded'}
 
 
