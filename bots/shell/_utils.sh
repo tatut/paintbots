@@ -62,3 +62,7 @@ say() {
 look() {
     post "id=$PAINTBOTS_ID&look"
 }
+
+bots() {
+    post "id=$PAINTBOTS_ID&bots"
+}

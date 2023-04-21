@@ -27,6 +27,7 @@ the server. See bots folder `_utils.sh` on how it uses curl to post commands.
 | clear    | id=ID&clear     | clear the pixel at current position                                                     |
 | look     | id=ID           | look around, returns ascii containing the current image (with colors as above)          |
 | bye      | id=ID&bye       | deregister this bot (id no longer is usable and name can be reused)                     |
+| bost     | id=ID&bots      | return (JSON) information about all registered bots                                     |
 
 Register command returns just the ID (as plain text) for future use. All other commands return your
 bot's current position and color.

@@ -200,6 +200,11 @@
 (defn canvas-image [state canvas-name]
   (get-in state [:canvas canvas-name :img]))
 
+(defn canvas-bots
+  "Return information on the bots currently registered for the given canvas."
+  [state canvas-name]
+  (vals (get-in state [:canvas canvas-name :bots])))
+
 (defn source
   "Return a ripley live source reflecting the given path.
   Path-fns may be keywords or other getter functions."

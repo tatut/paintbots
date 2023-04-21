@@ -13,7 +13,8 @@
             [ripley.live.protocols :as p]
             [ripley.impl.dynamic :as dynamic]
             [paintbots.png :as png]
-            [paintbots.state :as state])
+            [paintbots.state :as state]
+            [cheshire.core :as cheshire])
   (:import (java.awt.image BufferedImage)
            (java.awt Color Graphics2D)))
 
@@ -75,8 +76,18 @@
                              resp @response]
                          (httpkit/send!
                           ch
-                          (if (string? resp)
-                            {:status 200 :headers {"Content-Type" "text/plain"} :body resp}
+                          (cond
+                            (string? resp)
+                            {:status 200
+                             :headers {"Content-Type" "text/plain"}
+                             :body resp}
+
+                            (some? resp)
+                            {:status 200
+                             :headers {"Content-Type" "application/json"}
+                             :body (cheshire/encode resp)}
+
+                            :else
                             {:status 200
                              :headers {"Content-Type" "application/x-www-form-urlencoded"}
                              :body (str "x=" x "&y=" y "&color=" (state/color-name color))})
@@ -171,6 +182,18 @@
                        (let [c (.getRGB img x y)]
                          (print (if (zero? c) "." (state/color-name (from-col c))))
                          (recur y (inc x))))))))
+     bot)))
+
+(defn bots [req]
+  (bot-command
+   req
+   (fn [{r ::response} bot _]
+     (reset! r
+             (let [c (canvas-of req)
+                   state (state/current-state)]
+               (if (state/has-canvas? state c)
+                 (state/canvas-bots (state/current-state) c)
+                 [])))
      bot)))
 
 (defn app-bar [req]
@@ -339,6 +362,7 @@
    [:msg #'say]
    [:clear #'clear]
    [:look #'look]
+   [:bots #'bots]
    [:bye #'bye]])
 
 (defn handle-post [req]
