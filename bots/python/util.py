@@ -16,6 +16,15 @@ async def store_bot_config(bot_name: str, bot_id: str) -> dict:
     return {'name': bot_name, 'bot_id': bot_id}
 
 
+async def remove_bot_config():
+    exists = await file_exists(config_file_path)
+
+    if exists:
+        await aiofiles.os.remove(config_file_path)
+
+    return None
+
+
 async def load_bot_config() -> dict or None:
     exists = await file_exists(config_file_path)
 
@@ -43,3 +52,10 @@ async def register_bot(session, bot_name: str) -> Bot:
     print(f"Registered bot: {bot_name} with id: {bot_id}")
 
     return Bot(session, name=bot_name, bot_id=bot_id)
+
+
+async def deregister_bot(session, bot_id):
+    await api.bye(session, bot_id)
+
+    # Remove bot_config.cfg if present
+    await remove_bot_config()

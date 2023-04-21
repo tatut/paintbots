@@ -29,6 +29,26 @@ export const registerBot = async (name: string): Promise<string> => {
   }
 };
 
+
+export const degisterBot = async (bot: Bot) => {
+  try {
+    const response = await axios.post(API_URL, {id: bot.id, bye: ''}, config);
+
+    return response.data;
+  } catch (e) {
+    if (axios.isAxiosError(e)) {
+      const errResp = e.response;
+      const msg = errResp?.data || e.message
+
+      throw Error(`Failed to deregister bot: ${msg}`);
+    } else {
+      throw e;
+    }
+  }
+};
+
+
+
 /**
  * Returns an ascii representation of the current canvas.
  */
@@ -129,10 +149,7 @@ export const paintPixel = async (bot: Bot): Promise<Bot> => {
 };
 
 export const clearPixel = async (bot: Bot): Promise<Bot> => {
-  return await apiCommand(
-    bot,
-    { id: bot.id, clear: "" },
-    "Failed to clear a pixel"
+  return await apiCommand(bot, { id: bot.id, clear: "" }, "Failed to clear a pixel"
   );
 };
 

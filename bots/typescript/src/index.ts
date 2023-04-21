@@ -1,5 +1,5 @@
 import * as api from "./Api";
-import { moveBot, registerBot } from "./util";
+import {deregisterBot, moveBot, registerBot} from "./util";
 import { Bot } from "./types/Bot";
 
 // Name to be registered. Must be unique in the drawing board.
@@ -58,6 +58,12 @@ export async function main() {
 
   // Print the current state of canvas in ASCII
   // console.log(await api.look(bot))
+
+
+  // Call 'deregisterBot' if you want to remove your bot from the server and, for example, change your bot name.
+  // Your bot key is stored in botConfig.cfg after registration, and it is reused when you run this script again.
+  // The deregister_bot command will remove the botConfig.cfg file automatically.
+  // await deregisterBot(bot)
 }
 
 if (require.main === module) {

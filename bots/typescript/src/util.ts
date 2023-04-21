@@ -10,12 +10,16 @@ export const storeBotConfig = async (
   botName: string,
   id: string
 ): Promise<Bot> => {
-  await fs.writeFile("botConfig.cfg", `${botName}:${id}`);
+  await fs.writeFile(configFilePath, `${botName}:${id}`);
 
   return {
     name: botName,
     id,
   };
+};
+
+export const removeBotConfig = async () => {
+  await fs.unlink(configFilePath)
 };
 
 export const loadBotConfig = async (): Promise<Bot | undefined> => {
@@ -57,6 +61,13 @@ export const registerBot = async (botName: string): Promise<Bot> => {
     id,
   };
 };
+
+export const deregisterBot = async (bot: Bot) => {
+  await api.degisterBot(bot);
+
+  // Remove bot config if present
+  await removeBotConfig()
+}
 
 export const moveBot = async (
   bot: Bot,

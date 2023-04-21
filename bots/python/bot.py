@@ -1,5 +1,6 @@
 import aiohttp
 import api
+import util
 
 
 class Bot:
@@ -14,6 +15,11 @@ class Bot:
     def __set_position(self, response):
         self.x = response['x']
         self.y = response['y']
+
+    async def deregister_bot(self):
+        await util.deregister_bot(self.session, self.bot_id)
+
+        return self
 
     async def set_color(self, color: int):
         """
@@ -37,9 +43,9 @@ class Bot:
         return self
 
     async def clear_pixel(self):
-        await api.clear_pixel(self.session, self.bot_id)
+        response = await api.clear_pixel(self.session, self.bot_id)
 
-        # Clear pixel does not return position, so it will be not set here
+        self.__set_position(response)
 
         return self
 
