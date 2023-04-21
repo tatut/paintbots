@@ -29,6 +29,26 @@ export const registerBot = async (name: string): Promise<string> => {
   }
 };
 
+
+export const degisterBot = async (bot: Bot) => {
+  try {
+    const response = await axios.post(API_URL, {id: bot.id, bye: ''}, config);
+
+    return response.data;
+  } catch (e) {
+    if (axios.isAxiosError(e)) {
+      const errResp = e.response;
+      const msg = errResp?.data || e.message
+
+      throw Error(`Failed to deregister bot: ${msg}`);
+    } else {
+      throw e;
+    }
+  }
+};
+
+
+
 /**
  * Returns an ascii representation of the current canvas.
  */

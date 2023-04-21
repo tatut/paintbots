@@ -6,4 +6,5 @@ export interface BotCommand {
   clear?: string;
   look?: string;
   msg?: string;
+  bye?: string;
 }
