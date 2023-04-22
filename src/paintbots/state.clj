@@ -117,8 +117,9 @@
      :ok]))
 
 (defmethod process! :clear-canvas [{:keys [width height] :as state} {name :name}]
-  (when-let [gfx (get-in state [:canvas name :gfx])]
-    (.clearRect gfx 0 0 width height))
+  (when-let [img (get-in state [:canvas name :img])]
+    (doto img
+      (.setRGB 0 0 width height (int-array width 0) 0 0)))
   [state :ok])
 
 (defn next-free-start-pos
