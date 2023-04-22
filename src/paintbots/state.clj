@@ -113,14 +113,17 @@
   (let [img (BufferedImage. width height BufferedImage/TYPE_INT_ARGB)
         gfx (.createGraphics img)]
     [(assoc-in state [:canvas name]
-               {:bots {} :img img :gfx gfx})
+               {:bots {} :img img :gfx gfx :lock (Object.)
+                :changed (System/currentTimeMillis)})
      :ok]))
 
 (defmethod process! :clear-canvas [{:keys [width height] :as state} {name :name}]
-  (when-let [img (get-in state [:canvas name :img])]
-    (doto img
-      (.setRGB 0 0 width height (int-array width 0) 0 0)))
-  [state :ok])
+  (let [{:keys [img lock]} (get-in state [:canvas name])]
+    (when img
+      (locking lock
+        (doto img
+          (.setRGB 0 0 width height (int-array width 0) 0 0)))))
+  [(assoc-in state [:canvas name :changed] (System/currentTimeMillis)) :ok])
 
 (defn next-free-start-pos
   "Split canvas in zones and attempt to find a free zone for a registering bot.
@@ -177,11 +180,16 @@
 
 (defmethod process! :bot-command [state {:keys [canvas id command-fn]}]
   (let [bot (get-in state [:canvas canvas :bots id])
-        img (get-in state [:canvas canvas :img])
-        new-bot (command-fn bot img)]
+        {:keys [img lock]} (get-in state [:canvas canvas])
+        changed (boolean-array 1 false)
+        new-bot (command-fn bot (fn [func]
+                                  (aset changed 0 true)
+                                  (locking lock
+                                    (func img))))]
     [(-> state
          (assoc-in [:canvas canvas :bots id] (assoc new-bot :in-command? false))
-         (assoc-in [:canvas canvas :last-command] (System/currentTimeMillis)))
+         (assoc-in [:canvas canvas :last-command] (System/currentTimeMillis))
+         (update-in [:canvas canvas :changed] #(if (aget changed 0) (System/currentTimeMillis) %)))
      new-bot]))
 
 (defn current-state [] @state)

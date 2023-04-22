@@ -16,7 +16,7 @@
             [paintbots.state :as state]
             [cheshire.core :as cheshire])
   (:import (java.awt.image BufferedImage)
-           (java.awt Color Graphics2D)))
+           (java.awt Color)))
 
 (defonce server nil)
 
@@ -40,10 +40,7 @@
        :body "Already registered!"}
 
       :else
-
-      (let [id (state/cmd-sync! :register
-                                :canvas canvas
-                                :name name)]
+      (let [id (state/cmd-sync! :register :canvas canvas :name name)]
         {:status 200 :body id}))))
 
 (defn bot-command [{{:keys [id] :as params} :form-params :as req} command-fn]
@@ -132,10 +129,12 @@
   [req]
   (bot-command
    req
-   (fn [_ {:keys [x y color] :as bot} ^BufferedImage img]
-     (when (and (< -1 x (.getWidth img))
-                (< -1 y (.getHeight img)))
-       (.setRGB img x y (->col color)))
+   (fn [_ {:keys [x y color] :as bot} with-img]
+     (with-img
+       (fn [^BufferedImage img]
+         (when (and (< -1 x (.getWidth img))
+                    (< -1 y (.getHeight img)))
+           (.setRGB img x y (->col color)))))
      bot)))
 
 (defn info
@@ -149,10 +148,12 @@
   (defn clear [req]
     (bot-command
      req
-     (fn [_state {:keys [x y] :as bot} ^BufferedImage img]
-       (when (and (< -1 x (.getWidth img))
-                  (< -1 y (.getHeight img)))
-         (.setRGB img x y clear-color))
+     (fn [_state {:keys [x y] :as bot} with-img]
+       (with-img
+         (fn [^BufferedImage img]
+           (when (and (< -1 x (.getWidth img))
+                      (< -1 y (.getHeight img)))
+             (.setRGB img x y clear-color))))
        bot))))
 
 
@@ -171,26 +172,28 @@
 (defn look [req]
   (bot-command
    req
-   (fn [{r ::response} bot ^BufferedImage img]
-     ;; A hacky way to pass out a response
-     (let [w (.getWidth img)
-           h (.getHeight img)]
-       (reset! r (with-out-str
-                   (loop [y 0
-                          x 0]
-                     (cond
-                       (= x w)
-                       (do
-                         (print "\n")
-                         (recur (inc y) 0))
+   (fn [{r ::response} bot with-img]
+     (with-img
+       (fn [^BufferedImage img]
+         ;; A hacky way to pass out a response
+         (let [w (.getWidth img)
+               h (.getHeight img)]
+           (reset! r (with-out-str
+                       (loop [y 0
+                              x 0]
+                         (cond
+                           (= x w)
+                           (do
+                             (print "\n")
+                             (recur (inc y) 0))
 
-                       (= y h)
-                       :done
+                           (= y h)
+                           :done
 
-                       :else
-                       (let [c (.getRGB img x y)]
-                         (print (if (zero? c) "." (state/color-name (from-col c))))
-                         (recur y (inc x))))))))
+                           :else
+                           (let [c (.getRGB img x y)]
+                             (print (if (zero? c) "." (state/color-name (from-col c))))
+                             (recur y (inc x))))))))))
      bot)))
 
 (defn bots [req]
@@ -247,7 +250,7 @@
 (defn page [{:keys [width height background-logo?] :as _config} req]
   (let [canvas-name (canvas-of req)
         state-source (poll/poll-source 1000 #(state/current-state))
-        canvas-changed (source/computed #(get-in % [:canvas canvas-name :last-command]) state-source)
+        canvas-changed (png/png-bytes-source canvas-name)
         bots (source/computed #(get-in % [:canvas canvas-name :bots]) state-source)
         resize-callback (p/register-callback! dynamic/*live-context*
                                               (fn [& args]
@@ -286,18 +289,11 @@
 
            [:div#canvas
             [::h/live canvas-changed
-             (fn [_ts]
-               ;; PENDING: we could optimize by having 1 PNG byte array we send to all
-               ;; connected clients, not generating for each viewer  ¯\_(ツ)_/¯
-               ;; We need to set the src as data: URI because if we set a src that
-               ;; the browser will fetch, there will be flicker on updates.
-               (with-open [out (java.io.ByteArrayOutputStream.)]
-                 (png/png-to (state/canvas-image (state/current-state) canvas-name) out)
-                 (let [b (.toByteArray out)
-                       b64 (.encodeToString (java.util.Base64/getEncoder) b)
-                       src (str "data:image/png;base64," b64)]
-                   (h/html
-                    [:img {:id "gfx" :src src}]))))]
+             (fn [b]
+               (let [b64 (.encodeToString (java.util.Base64/getEncoder) b)
+                     src (str "data:image/png;base64," b64)]
+                 (h/html
+                  [:img {:id "gfx" :src src}])))]
             [:svg#bot-positions {:viewBox (str "0 0 " width " " height)}
              [::h/live bots
               (fn [bots]
@@ -417,10 +413,10 @@
         ;; Try to download PNG of a canvas
         (str/ends-with? uri ".png")
         (let [canvas (some-> req  canvas-of (str/replace #".png$" ""))]
-          (if-let [img (state/canvas-image (state/current-state) canvas)]
+          (if-let [png (png/current-png-bytes canvas)]
             {:status 200
              :headers {"Cache-Control" "no-cache"}
-             :body (ring-io/piped-input-stream (partial png/png-to img))}
+             :body png}
             {:status 404
              :body "No such canvas!"}))
 
@@ -442,7 +438,7 @@
                 :height height
                 :command-duration-ms command-duration-ms)
     (state/cmd! :create-canvas :name "scratch")
-    #_(png/listen! state config)
+    (png/listen! state/state config)
     (alter-var-root #'server
                     (fn [_]
                       (httpkit/run-server (params/wrap-params
