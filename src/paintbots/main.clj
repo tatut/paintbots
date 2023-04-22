@@ -261,7 +261,8 @@
            "window.addEventListener('resize', (event) => {_rs(" resize-callback ", [document.querySelector('#gfx').width])})"])
          (h/html
           [:style
-           "#gfx { image-rendering: pixelated; width: 100%; position: absolute; } "
+           "#gfx { image-rendering: pixelated; width: 100%; position: absolute; z-index: 99; } "
+           "#bot-positions { z-index: 100; } "
            (when background-logo?
              (h/out! background-image-css))]))
 
