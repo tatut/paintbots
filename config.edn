@@ -13,4 +13,7 @@
 
  ;; Admin config, for the love of all that is good, CHANGE the password before deploying
  :admin {:password "letmein"}
+
+ :video {:ffmpeg-executable "/opt/homebrew/bin/ffmpeg"
+         :framerate 10}
  }

@@ -14,6 +14,7 @@
             [ripley.impl.dynamic :as dynamic]
             [paintbots.png :as png]
             [paintbots.state :as state]
+            [paintbots.video :as video]
             [cheshire.core :as cheshire])
   (:import (java.awt.image BufferedImage)
            (java.awt Color)))
@@ -323,6 +324,7 @@
            [:figure [:img {:src img}]]
            [:div.card-body
             [:h2.card-title canvas-name]
+            [:a {:href (str "/" canvas-name ".mp4") :target :_blank} "video"]
             "Bots:"
             [:ul
              [::h/for [[id name] bots]
@@ -412,13 +414,24 @@
 
         ;; Try to download PNG of a canvas
         (str/ends-with? uri ".png")
-        (let [canvas (some-> req  canvas-of (str/replace #".png$" ""))]
+        (let [canvas (some-> req canvas-of (str/replace #".png$" "") state/valid-canvas)]
           (if-let [png (png/current-png-bytes canvas)]
             {:status 200
              :headers {"Cache-Control" "no-cache"}
              :body png}
             {:status 404
              :body "No such canvas!"}))
+
+        ;; Try to download MP4 video of canvas snapshots
+        (str/ends-with? uri ".mp4")
+        (if-let [canvas (some-> req canvas-of (str/replace #".mp4$" "") state/valid-canvas)]
+          {:status 200
+           :headers {"Content-Type" "video/mp4"}
+           :body (ring-io/piped-input-stream
+                  (fn [out]
+                    (video/generate (:video config) canvas out)))}
+          {:status 404
+           :body "No such canvas!"})
 
         :else
         (if (state/has-canvas? (state/current-state) (canvas-of req))

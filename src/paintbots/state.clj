@@ -221,3 +221,7 @@
   (source/computed (fn [current-state]
                      (reduce (fn [here f] (f here)) current-state path-fns))
                    state))
+
+(defn valid-canvas [name]
+  (when (has-canvas? (current-state) name)
+    name))
