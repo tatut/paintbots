@@ -8,6 +8,7 @@ This folder contains example bot implementations.
 * `typescript` a more complex Node TypeScript example
 * `clojure` a Clojure example
 * `java` a simple Java skeleton
+*  `prolog` a Prolog sample
 
 
 Simple scripts that use the paintbots API to draw stuff.
