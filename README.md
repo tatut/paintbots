@@ -20,6 +20,7 @@ the server. See bots folder `_utils.sh` on how it uses curl to post commands.
 | Command  | Parameters      | Description                                                                             |
 |----------|-----------------|-----------------------------------------------------------------------------------------|
 | register | register=name   | register a bot with the given name (if not already registered), returns id              |
+| info     | id=ID&info      | no-op command that just returns bots current                                            |
 | move     | id=ID&move=DIR  | move from current to position to direction DIR, which is one of LEFT, RIGHT, UP or DOWN |
 | paint    | id=ID           | paint the current position with the current color                                       |
 | color    | id=ID&color=COL | set the current color to COL, which is one of 0-f (16 color palette)                    |

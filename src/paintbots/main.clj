@@ -127,7 +127,9 @@
 (def ->col (memoize (fn [[r g b]]
                       (.getRGB (Color. ^int r ^int g ^int b)))))
 
-(defn paint [req]
+(defn paint
+  "Paint the pixel at the current position with the current color."
+  [req]
   (bot-command
    req
    (fn [_ {:keys [x y color] :as bot} ^BufferedImage img]
@@ -135,6 +137,13 @@
                 (< -1 y (.getHeight img)))
        (.setRGB img x y (->col color)))
      bot)))
+
+(defn info
+  "No-op command for returning bots own info."
+  [req]
+  (bot-command
+   req
+   (fn [_ bot _] bot)))
 
 (let [clear-color 0]
   (defn clear [req]
@@ -356,6 +365,7 @@
 
 (def command-handlers
   [[:register #'register]
+   [:info #'info]
    [:move #'move]
    [:paint #'paint]
    [:color #'change-color]
