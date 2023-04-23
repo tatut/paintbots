@@ -95,6 +95,8 @@ bye(bot(Id,_,_,_,_)) :-
 
 say(Msg) --> cmd([msg=Msg]).
 
+color(C) --> cmd([color=C]).
+
 % Determine which direction to go, based on two points
 dir([X1,_],[X2,_], 'RIGHT') :- X1 < X2.
 dir([X1,_],[X2,_], 'LEFT') :- X1 > X2.
@@ -155,7 +157,7 @@ ws --> [].
 turtle([]) --> [].
 turtle([P|Ps]) --> ws, turtle_command(P), ws, turtle(Ps).
 
-turtle_command(Cmd) --> fd(Cmd) | bk(Cmd) | rt(Cmd) | pen(Cmd) | repeat(Cmd).
+turtle_command(Cmd) --> fd(Cmd) | bk(Cmd) | rt(Cmd) | pen(Cmd) | randpen(Cmd) | repeat(Cmd).
 
 repeat(Cmd) --> "repeat", ws, num(Times), ws, "[", turtle(Program), "]",
                 { Cmd = repeat(Times, Program) }.
@@ -164,6 +166,7 @@ fd(Fd) --> "fd", ws, num(N), { Fd = fd(N) }.
 bk(Bk) --> "bk", ws, num(N), { Bk = bk(N) }.
 rt(Rt) --> "rt", ws, num(N), { Rt = rt(N) }.
 pen(C) --> "pen", ws, [Col], { char_type(Col, alnum) }, ws, { C = pen(Col) }.
+randpen(C) --> "randpen", { C = randpen }.
 num(N) --> "-", integer(I), { N is -I }.
 num(N) --> integer(N).
 
@@ -206,6 +209,15 @@ eval(fd(Len)) -->
       Y1 is round(Y + Len * sin(Rad)) },
     draw_line([X1,Y1]).
 
+eval(bk(Len)) -->
+    { MinusLen is -Len },
+    eval(fd(MinusLen)).
+
+eval(pen(C)) --> color(C).
+eval(randpen) -->
+    { C is random(16), format(atom(Col), '~16r', [C]) },
+    color(Col).
+
 eval(repeat(0, _)) --> [].
 eval(repeat(N, Cmds)) -->
     { N > 0,
@@ -216,13 +228,18 @@ eval(repeat(N, Cmds)) -->
 %% phrase(turtle(T), "fd 5 rt 90 fd 5 rt 90 fd 5")
 % eval_turtle('Turtles3', [repeat(10,[rt(50),fd(10)])]).
 
+run(Name, Program) :-
+    phrase(turtle(P), Program),
+    eval_turtle(Name, P).
+
 %% dahlia.logo
 %% see http://www.mathcats.com/gallery/15wordcontest.html
 dahlia() :-
-    phrase(turtle(Dahlia), "repeat 8 [rt 45 repeat 6 [repeat 90 [fd 2 rt 2] rt 90]]"),
-    eval_turtle('Dahlia', Dahlia).
+    run('Dahlia', "repeat 8 [rt 45 repeat 6 [repeat 90 [fd 2 rt 2] rt 90]]").
 
 %% Draw a simple star
 star() :-
-    phrase(turtle(Star), "repeat 5 [ fd 25 rt 144 ]"),
-    eval_turtle('Star', Star).
+    run('Star', "repeat 5 [ fd 25 rt 144 ]").
+
+stars() :-
+    run('Stars', "repeat 5 [ randpen repeat 5 [ fd 25 rt 144 ] fd 10]").
