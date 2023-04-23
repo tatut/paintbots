@@ -12,6 +12,9 @@ Start by running `clojure -m paintbots.main`. Then open browser at http://localh
 
 See bots folder for sample bots using simple bash scripts.
 
+Alternatively, you can run local server using Docker without needing to install Clojure:
+`docker run -p 31173:31173 antitadex/paintbots:latest`
+
 ## Bot commands
 
 Each bot must be registered to use. All bot commands are POSTed using simple form encoding to
