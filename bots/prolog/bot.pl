@@ -242,4 +242,4 @@ star() :-
     run('Star', "repeat 5 [ fd 25 rt 144 ]").
 
 stars() :-
-    run('Stars', "repeat 5 [ randpen repeat 5 [ fd 25 rt 144 ] fd 10]").
+    run('Stars', "repeat 6 [ randpen repeat 5 [ fd 25 rt 144 ] fd 30 rt 60]").
