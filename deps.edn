@@ -6,4 +6,6 @@
         org.clojure/clojure {:mvn/version "1.11.1"}
         cheshire/cheshire {:mvn/version "5.11.0"}}
  :aliases
- {:dev {:extra-paths ["dev-src"]}}}
+ {:dev {:extra-paths ["dev-src"]}
+  :run {:main-opts ["-m" "paintbots.main"]}}
+ }
