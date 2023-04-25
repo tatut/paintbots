@@ -243,6 +243,7 @@
     [:head
      [:meta {:charset "UTF-8"}]
      [:link {:rel "stylesheet" :href "/paintbots.css"}]
+     [:link {:rel "icon" :href "/favicon.ico" :type "image/x-icon"}]
      (h/live-client-script "/ws")
      (head-fn)]
     [:body
@@ -391,54 +392,58 @@
         {:status 404
          :body "I don't recognize those parameters, try something else."})))
 
+(def ^:const assets #{"/paintbots.css" "/favicon.ico" "/logo.png"})
+(def asset-type {"/paintbots.css" "text/css"
+                 "/favicon.ico" "image/x-icon"
+                 "/logo.png" "image/png"})
+(defn asset [req]
+  (when-let [asset (some->> req :uri assets (str "public") io/resource)]
+    {:status 200
+     :headers {"Content-Type" (asset-type (:uri req))}
+     :body (ring-io/piped-input-stream
+            (fn [out]
+              (with-open [in (.openStream asset)]
+                (io/copy in out))))}))
+
 (let [ws-handler (context/connection-handler "/ws" :ping-interval 45)]
   (defn handler [config {m :request-method uri :uri :as req}]
     (if (= uri "/ws")
       (ws-handler req)
-      (cond
-        (= :post m)
-        (handle-post req)
+      (or (asset req)
+          (cond
+            (= :post m)
+            (handle-post req)
 
-        (= uri "/admin")
-        (h/render-response (partial #'admin-page config req))
+            (= uri "/admin")
+            (h/render-response (partial #'admin-page config req))
 
-        (= uri "/paintbots.css")
-        {:status 200
-         :body (slurp (io/resource "public/paintbots.css"))}
-
-        (= uri "/logo.png")
-        {:status 200
-         :body (ring-io/piped-input-stream
-                #(with-open [in (io/input-stream (io/resource "public/logo.png"))]
-                   (io/copy in %)))}
-
-        ;; Try to download PNG of a canvas
-        (str/ends-with? uri ".png")
-        (let [canvas (some-> req canvas-of (str/replace #".png$" "") state/valid-canvas)]
-          (if-let [png (png/current-png-bytes canvas)]
-            {:status 200
-             :headers {"Cache-Control" "no-cache"}
-             :body png}
-            {:status 404
-             :body "No such canvas!"}))
+            ;; Try to download PNG of a canvas
+            (str/ends-with? uri ".png")
+            (let [canvas (some-> req canvas-of (str/replace #".png$" "") state/valid-canvas)]
+              (if-let [png (png/current-png-bytes canvas)]
+                {:status 200
+                 :headers {"Cache-Control" "no-cache"}
+                 :body png}
+                {:status 404
+                 :body "No such canvas!"}))
 
         ;; Try to download MP4 video of canvas snapshots
-        (str/ends-with? uri ".mp4")
-        (if-let [canvas (some-> req canvas-of (str/replace #".mp4$" "") state/valid-canvas)]
-          {:status 200
-           :headers {"Content-Type" "video/mp4"}
-           :body (ring-io/piped-input-stream
-                  (fn [out]
-                    (video/generate (:video config) canvas out)))}
-          {:status 404
-           :body "No such canvas!"})
-
-        :else
-        (if (state/has-canvas? (state/current-state) (canvas-of req))
-          (h/render-response (partial #'page config req))
-          (do (println "Someone tried: " (pr-str (:uri req)))
+            (str/ends-with? uri ".mp4")
+            (if-let [canvas (some-> req canvas-of (str/replace #".mp4$" "") state/valid-canvas)]
+              {:status 200
+               :headers {"Content-Type" "video/mp4"}
+               :body (ring-io/piped-input-stream
+                      (fn [out]
+                        (video/generate (:video config) canvas out)))}
               {:status 404
-               :body "Ain't nothing more here for you, go away!"}))))))
+               :body "No such canvas!"})
+
+            :else
+            (if (state/has-canvas? (state/current-state) (canvas-of req))
+              (h/render-response (partial #'page config req))
+              (do (println "Someone tried: " (pr-str (:uri req)))
+                  {:status 404
+                   :body "Ain't nothing more here for you, go away!"})))))))
 
 (defn -main [& [config-file :as _args]]
   (let [config-file (or config-file "config.edn")
