@@ -5,7 +5,7 @@
  :command-duration-ms 10 ; make short for local debug
 
  ;; Canvas size
- :width 160 :height 100
+ :width 320 :height 200
  :background-logo? true ; show a very cool logo in the canvas background
 
  ;; How often to take a PNG snapshot, this affects both web UI and files created
