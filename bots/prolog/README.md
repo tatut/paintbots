@@ -36,3 +36,7 @@ Draw a star:
 
 Draw a circle of stars, each with a random color:
 `repeat 6 [ randpen repeat 5 [ fd 25 rt 144 ] fd 30 rt 60]`
+
+
+Running with docker:
+`docker run --env PAINTBOTS_URL=https://<my-server-host> --env PAINTBOTS_NAME=<bot-name> -it antitadex/paintbots-logo:latest`
