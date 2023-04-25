@@ -71,6 +71,14 @@ class Bot:
         # Returns the ASCII representation of the current canvas
         return response
 
+    async def bots(self):
+        """
+        :return: (JSON) information about all registered bots
+        """
+        response = await api.bots(self.session, self.bot_id)
+
+        return response
+
     # !! Add your own drawing functions here !!
 
     async def draw_rectangle(self, width: int):

@@ -38,6 +38,10 @@ async def main():
 
         print(f"Current bot position: {bot.x},{bot.y} and current bot color: {bot.color}")
 
+        # Get the current state of all registered bots (json)
+        # Useful i.e. for bots that want to utilize some swarming behaviour
+        # print(await bot.bots())
+
         # Print the current state of the canvas
         # print(await bot.look())
 
