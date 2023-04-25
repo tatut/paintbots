@@ -3,7 +3,7 @@
 :- set_prolog_flag(double_quotes, chars).
 
 
-url(URL) :- getenv("PAINTBOTS_URL", URL) ; URL='http://localhost:31173'.
+url(URL) :- getenv("PAINTBOTS_URL", URL), !; URL='http://localhost:31173'.
 
 post(FormData, Result) :-
      url(URL),
@@ -164,8 +164,7 @@ turtle_command(Cmd) --> fd(Cmd) | bk(Cmd) | rt(Cmd) |
                         for(Cmd).
 
 
-repeat(Cmd) --> "repeat", ws, num(Times), ws, "[", turtle(Program), "]",
-                { Cmd = repeat(Times, Program) }.
+repeat(repeat(Times,Program)) --> "repeat", ws, arg_(Times), ws, "[", turtle(Program), "]".
 
 fd(fd(N)) --> "fd", ws, arg_(N).
 bk(bk(N)) --> "bk", ws, arg_(N).
@@ -229,8 +228,8 @@ eval(rt(DegArg)) -->
       Ctx1 = Ctx0.put(angle, Ang1) }.
 
 eval(fd(LenArg)) -->
-    state(bot(_,X,Y,_,Ctx)),
     argv(LenArg, Len),
+    state(bot(_,X,Y,_,Ctx)),
     { deg_rad(Ctx.angle, Rad),
       X1 is round(X + Len * cos(Rad)),
       Y1 is round(Y + Len * sin(Rad)) },
@@ -246,13 +245,13 @@ eval(randpen) -->
     { C is random(16), format(atom(Col), '~16r', [C]) },
     color(Col).
 
-eval(repeat(0, _)) --> [].
+eval(repeat(num(0), _)) --> [].
 eval(repeat(NArg, Cmds)) -->
     argv(NArg, N),
     { N > 0,
       N1 is N - 1 },
     eval_all(Cmds),
-    eval(repeat(N1, Cmds)).
+    eval(repeat(num(N1), Cmds)).
 
 eval(setxy(XArg,YArg)) -->
     argv(XArg, X), argv(YArg, Y),
@@ -288,6 +287,8 @@ stars() :-
     run('Stars', "repeat 6 [ randpen repeat 5 [ fd 25 rt 144 ] fd 30 rt 60]").
 
 logo(Name) :-
+    url(URL),
+    format('toy Logo repl, registerin bot "~w" to server at: ~w', [Name, URL]),
     register(Name, ctx{angle: 0}, Bot0),
     logo_repl(Bot0, BotF),
     bye(BotF).
@@ -295,10 +296,16 @@ logo(Name) :-
 logo_repl(Bot0, BotF) :-
     read_line_to_string(user_input, Str),
     string_chars(Str, Cs),
-    ( Cs = "bye" ->
+    ( (Cs = "bye"; Str = end_of_file) ->
       Bot0 = BotF
     ; ( phrase(turtle(Program), Cs) ->
         phrase(eval_all(Program), [Bot0], [Bot1]),
         logo_repl(Bot1, BotF)
       ; writeln(syntax_error(Str)),
         logo_repl(Bot0, BotF))).
+
+start_repl :-
+    format('Paintbots toy Logo REPL!\n   environment variables:\n   - PAINTBOTS_URL   server url\n   - PAINTBOTS_NAME  bot name\n\n exit with: bye\n'),
+    getenv('PAINTBOTS_NAME', Name),
+    logo(Name),
+    halt.
