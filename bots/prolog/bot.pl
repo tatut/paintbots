@@ -1,5 +1,6 @@
 :- use_module(library(http/http_client)).
 :- use_module(library(dcg/basics)).
+:- set_prolog_flag(double_quotes, chars).
 
 
 url(URL) :- getenv("PAINTBOTS_URL", URL) ; URL='http://localhost:31173'.
@@ -157,16 +158,18 @@ ws --> [].
 turtle([]) --> [].
 turtle([P|Ps]) --> ws, turtle_command(P), ws, turtle(Ps).
 
-turtle_command(Cmd) --> fd(Cmd) | bk(Cmd) | rt(Cmd) | pen(Cmd) | randpen(Cmd) | repeat(Cmd).
+turtle_command(Cmd) --> fd(Cmd) | bk(Cmd) | rt(Cmd) | pen(Cmd) | randpen(Cmd) | repeat(Cmd) | setxy(Cmd).
 
 repeat(Cmd) --> "repeat", ws, num(Times), ws, "[", turtle(Program), "]",
                 { Cmd = repeat(Times, Program) }.
 
-fd(Fd) --> "fd", ws, num(N), { Fd = fd(N) }.
-bk(Bk) --> "bk", ws, num(N), { Bk = bk(N) }.
-rt(Rt) --> "rt", ws, num(N), { Rt = rt(N) }.
-pen(C) --> "pen", ws, [Col], { char_type(Col, alnum) }, ws, { C = pen(Col) }.
-randpen(C) --> "randpen", { C = randpen }.
+fd(fd(N)) --> "fd", ws, num(N).
+bk(bk(N)) --> "bk", ws, num(N).
+rt(rt(N)) --> "rt", ws, num(N).
+pen(pen(Col)) --> "pen", ws, [Col], { char_type(Col, alnum) }, ws.
+randpen(randpen) --> "randpen".
+setxy(setxy(X,Y)) --> "setxy", ws, num(X), ws, num(Y).
+
 num(N) --> "-", integer(I), { N is -I }.
 num(N) --> integer(N).
 
@@ -225,6 +228,8 @@ eval(repeat(N, Cmds)) -->
     eval_all(Cmds),
     eval(repeat(N1, Cmds)).
 
+eval(setxy(X,Y)) --> move_to([X,Y]).
+
 %% phrase(turtle(T), "fd 5 rt 90 fd 5 rt 90 fd 5")
 % eval_turtle('Turtles3', [repeat(10,[rt(50),fd(10)])]).
 
@@ -235,7 +240,7 @@ run(Name, Program) :-
 %% dahlia.logo
 %% see http://www.mathcats.com/gallery/15wordcontest.html
 dahlia() :-
-    run('Dahlia', "repeat 8 [rt 45 repeat 6 [repeat 90 [fd 2 rt 2] rt 90]]").
+    run('Dahlia', "setxy 100 10 repeat 8 [rt 45 repeat 6 [repeat 90 [fd 2 rt 2] rt 90]]").
 
 %% Draw a simple star
 star() :-
