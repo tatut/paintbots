@@ -161,11 +161,12 @@ turtle([P|Ps]) --> ws, turtle_command(P), ws, turtle(Ps).
 turtle_command(Cmd) --> fd(Cmd) | bk(Cmd) | rt(Cmd) |
                         pen(Cmd) | randpen(Cmd) |
                         repeat(Cmd) | setxy(Cmd) |
-                        for(Cmd).
+                        for(Cmd) | say_(Cmd).
 
 
 repeat(repeat(Times,Program)) --> "repeat", ws, arg_(Times), ws, "[", turtle(Program), "]".
 
+say_(say(Msg)) --> "say", ws, "\"", string_without("\"", Codes), "\"", { atom_codes(Msg, Codes) }.
 fd(fd(N)) --> "fd", ws, arg_(N).
 bk(bk(N)) --> "bk", ws, arg_(N).
 rt(rt(N)) --> "rt", ws, arg_(N).
@@ -266,6 +267,9 @@ eval(for(Var, From, To, Step, Program)) -->
     eval_all(Program),
     { From1 is From + Step },
     eval(for(Var, From1, To, Step, Program)).
+
+eval(say(Msg)) -->
+    say(Msg).
 
 % phrase(turtle(T), "fd 5 rt 90 fd 5 rt 90 fd 5")
 % eval_turtle('Turtles3', [repeat(10,[rt(50),fd(10)])]).

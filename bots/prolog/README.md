@@ -21,6 +21,7 @@ The language implements the following commands:
 * `pen <C>` set pen color (0 - f)
 * `randpen` set a random pen color
 * `setxy <X> <Y>` move to X,Y coordinates (without drawing)
+* `say "message"` set your chat message
 
 Parameter values can be integer numbers (possibly negative) or variable references prefixed with colon
 (eg `:i`). Variables are all single characters.
