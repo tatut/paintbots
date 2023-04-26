@@ -15,6 +15,7 @@
             [paintbots.png :as png]
             [paintbots.state :as state]
             [paintbots.video :as video]
+            [paintbots.client :as client]
             [cheshire.core :as cheshire])
   (:import (java.awt.image BufferedImage)
            (java.awt Color)))
@@ -254,22 +255,21 @@
         state-source (poll/poll-source 1000 #(state/current-state))
         canvas-changed (png/png-bytes-source canvas-name)
         bots (source/computed #(get-in % [:canvas canvas-name :bots]) state-source)
-        resize-callback (p/register-callback! dynamic/*live-context*
-                                              (fn [& args]
-                                                (println "resize callback: " (pr-str args))))]
+        client? (contains? (:query-params req) "client")]
     (with-page
       ;; head stuff
       #(do
          (h/html
           [:script {:type "text/javascript"}
-           "function toggleBots() { let b = document.querySelector('#bot-positions'); b.style.display = b.style.display == '' ? 'none' : ''; }; "
-           "window.addEventListener('resize', (event) => {_rs(" resize-callback ", [document.querySelector('#gfx').width])})"])
+           "function toggleBots() { let b = document.querySelector('#bot-positions'); b.style.display = b.style.display == '' ? 'none' : ''; }; "])
          (h/html
           [:style
            "#gfx { image-rendering: pixelated; width: 100%; position: absolute; z-index: 99; } "
            "#bot-positions { z-index: 100; } "
            (when background-logo?
-             (h/out! background-image-css))]))
+             (h/out! background-image-css))])
+         (when client?
+           (client/client-head)))
 
       ;; page content
       #(do
@@ -306,7 +306,9 @@
                               :let [c (apply format "#%02x%02x%02x" color)]]
                      [:g
                       [:text {:x (- x 2) :y (- y 2.5) :font-size 2 :fill "white"} name]
-                      [:circle {:cx (+ 0.5 x) :cy (+ 0.5 y) :r 2 :stroke c :stroke-width 0.25}]]]])))]]]])))))
+                      [:circle {:cx (+ 0.5 x) :cy (+ 0.5 y) :r 2 :stroke c :stroke-width 0.25}]]]])))]]]
+           [::h/when client?
+            (client/client-ui)]])))))
 
 (defn admin-panel [config req]
   (h/html
@@ -392,18 +394,25 @@
         {:status 404
          :body "I don't recognize those parameters, try something else."})))
 
-(def ^:const assets #{"/paintbots.css" "/favicon.ico" "/logo.png"})
-(def asset-type {"/paintbots.css" "text/css"
-                 "/favicon.ico" "image/x-icon"
-                 "/logo.png" "image/png"})
-(defn asset [req]
-  (when-let [asset (some->> req :uri assets (str "public") io/resource)]
-    {:status 200
-     :headers {"Content-Type" (asset-type (:uri req))}
-     :body (ring-io/piped-input-stream
-            (fn [out]
-              (with-open [in (.openStream asset)]
-                (io/copy in out))))}))
+(def assets
+  {"/paintbots.css" {:t "text/css"}
+   "/favicon.ico" {:t "image/x-icon"}
+   "/logo.png" {:t "image/png"}
+
+   "/client/swipl-bundle.js" {:t "text/javascript" :enc "gzip" :f "/client/swipl-bundle.js.gz"}
+   "/client/logo.pl" {:t :text/prolog}})
+
+(defn asset [{uri :uri :as req}]
+  (when-let [asset (assets uri)]
+    (let [file (->> (or (:f asset) uri) (str "public") io/resource)]
+      {:status 200
+       :headers (merge {"Content-Type" (:t asset)}
+                       (when-let [enc (:enc asset)]
+                         {"Content-Encoding" enc}))
+       :body (ring-io/piped-input-stream
+              (fn [out]
+                (with-open [in (.openStream file)]
+                  (io/copy in out))))})))
 
 (let [ws-handler (context/connection-handler "/ws" :ping-interval 45)]
   (defn handler [config {m :request-method uri :uri :as req}]
