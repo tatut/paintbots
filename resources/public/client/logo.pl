@@ -136,7 +136,7 @@ turtle([P|Ps]) --> ws, turtle_command(P), ws, turtle(Ps).
 
 turtle_command(Cmd) --> fd(Cmd) | bk(Cmd) | rt(Cmd) |
                         pen(Cmd) | randpen(Cmd) |
-                        repeat(Cmd) | setxy(Cmd) |
+                        repeat(Cmd) | setxy(Cmd) | setang(Cmd) |
                         for(Cmd) | say_(Cmd).
 
 
@@ -149,6 +149,7 @@ rt(rt(N)) --> "rt", ws, arg_(N).
 pen(pen(Col)) --> "pen", ws, [Col], { char_type(Col, alnum) }, ws.
 randpen(randpen) --> "randpen".
 setxy(setxy(X,Y)) --> "setxy", ws, arg_(X), ws, arg_(Y).
+setang(setang(Deg)) --> "setang", ws, arg_(Deg).
 for(for(Var, From, To, Step, Program)) -->
     "for", ws, "[", ws, var_name(Var), ws, num(From), ws, num(To), ws, num(Step), ws, "]", ws,
     "[", turtle(Program), "]".
@@ -219,7 +220,7 @@ eval(fd(LenArg)) -->
 eval(bk(LenArg)) -->
     argv(LenArg, Len),
     { MinusLen is -Len },
-    eval(fd(MinusLen)).
+    eval(fd(num(MinusLen))).
 
 eval(pen(C)) --> color(C).
 eval(randpen) -->
@@ -237,6 +238,10 @@ eval(repeat(NArg, Cmds)) -->
 eval(setxy(XArg,YArg)) -->
     argv(XArg, X), argv(YArg, Y),
     move_to([X,Y]).
+
+eval(setang(AngArg)) -->
+    argv(AngArg, Ang),
+    setval(angle, Ang).
 
 %% Loop done
 eval(for(_, From, To, Step, _)) -->
@@ -256,7 +261,7 @@ run(Name, Program) :-
     eval_turtle(Name, P).
 
 logo(Name) :-
-    format('toy Logo repl, registering bot "~w"\n', [Name]),
+    log('toy Logo repl, registering bot "~w"\n', [Name]),
     register(Name, ctx{angle: 0}, Bot0),
     logo_repl(Bot0, BotF),
     bye(BotF).
@@ -269,7 +274,9 @@ logo_repl(Bot0, BotF) :-
       log('Bye!'),
       Bot0 = BotF
     ; ( phrase(turtle(Program), Cs) ->
-        phrase(eval_all(Program), [Bot0], [Bot1]),
+        log('Executing program',[]),
+        call_time(phrase(eval_all(Program), [Bot0], [Bot1]), Time),
+        log('DONE in ~1f seconds', [Time.wall]),
         logo_repl(Bot1, BotF)
       ; log('Syntax error in: ~w', [Str]),
         logo_repl(Bot0, BotF))).
