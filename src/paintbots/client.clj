@@ -30,6 +30,8 @@
       window._promises = {};
 
       function get_input() {
+          document.querySelector('#botname').disabled = true;
+          document.querySelector('#regbtn').style.visibility = 'hidden';
           return new Promise((resolve) => { window._promises.input = resolve });
       }
 
@@ -61,7 +63,7 @@
     [:div
      [:b "Bot name: "]
      [:input#botname {:placeholder "mybot123"}]
-     [:button.btn.btn-sm {:on-click "register()"} "Register"]]
+     [:button#regbtn.btn.btn-sm {:on-click "register()"} "Register"]]
     [:div
      [:textarea#logo {:rows 7 :cols 80 :on-key-press "maybe_send_input(event)"} "repeat 5 [fd 25 rt 144]"]
      [:div
