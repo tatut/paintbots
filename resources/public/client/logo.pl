@@ -1,6 +1,10 @@
 :- use_module(library(dcg/basics)).
 :- set_prolog_flag(double_quotes, chars).
 
+log(Pattern, Args) :-
+    format(string(L), Pattern, Args),
+    _ := log(L).
+
 %% Simple form data parsing, the builtin HTTP client would do this for us, but
 %% we are using text transfer between JS fetch and Prolog ¯\_(ツ)_/¯
 form_data([Name=Value | More]) --> string_without("=", NameS), "=", string_without("&", ValueS),
@@ -71,7 +75,7 @@ register(Name, State) :- register(Name, initial, State).
 register(Name, UserData, State) :-
     post([register = Name], Id),
     phrase(cmd([info='']), [bot(Id,_,_,_,UserData)], [State]),
-    writeln(registered(Name,State)).
+    log('Registered ~w', [State]).
 
 %% Bot commands take form of DCG nonterminals with bot state as final args:
 %% command(CommandArgs, S0, S1)
@@ -153,6 +157,7 @@ num(N) --> "-", integer(I), { N is -I }.
 num(N) --> integer(N).
 arg_(num(N)) --> num(N).
 arg_(var(V)) --> ":", var_name(V).
+arg_(rnd(Low,High)) --> "rnd", ws, num(Low), ws, num(High).
 
 % Parse a turtle program:
 % set_prolog_flag(double_quote, chars).
@@ -189,6 +194,8 @@ argv(var(V), Val) -->
     { Val = Ctx.V }.
 
 argv(num(V), V) --> [].
+
+argv(rnd(Low,High), V) --> { random_between(Low,High,V) }.
 
 setval(Var, Val) -->
     user_data(Ctx0, Ctx1),
@@ -257,14 +264,14 @@ logo(Name) :-
 logo_repl(Bot0, BotF) :-
     InputPromise := get_input(),
     await(InputPromise, Str),
-    writeln(got_input(Str)),
     string_chars(Str, Cs),
     ( (Cs = "bye"; Str = end_of_file) ->
+      log('Bye!'),
       Bot0 = BotF
     ; ( phrase(turtle(Program), Cs) ->
         phrase(eval_all(Program), [Bot0], [Bot1]),
         logo_repl(Bot1, BotF)
-      ; writeln(syntax_error(Str)),
+      ; log('Syntax error in: ~w', [Str]),
         logo_repl(Bot0, BotF))).
 
 start_repl :-

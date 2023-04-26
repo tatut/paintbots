@@ -48,6 +48,12 @@
          P.forEach('start_repl.');
       }
 
+      function log(msg) {
+        let l = document.querySelector('#logs');
+        l.innerHTML += `<div>${msg}</div>`;
+        l.scrollTop = l.scrollHeight;
+      }
+
       function botinfo(X,Y,C,Ang) {
         document.querySelector('#X').innerHTML = X;
         document.querySelector('#Y').innerText = Y;
@@ -64,11 +70,15 @@
      [:b "Bot name: "]
      [:input#botname {:placeholder "mybot123"}]
      [:button#regbtn.btn.btn-sm {:on-click "register()"} "Register"]]
-    [:div
-     [:textarea#logo {:rows 7 :cols 80 :on-key-press "maybe_send_input(event)"} "repeat 5 [fd 25 rt 144]"]
-     [:div
-      [:button.btn.btn-sm {:on-click "send_input()"} "Execute"]
-      " (ctrl-enter)"]]
+    [:div.flex.w-full
+     [:div.grid.flex-grow.card
+      [:textarea#logo {:rows 7 :cols 80 :on-key-press "maybe_send_input(event)"} "repeat 5 [fd 25 rt 144]"]
+      [:div
+       [:button.btn.btn-sm {:on-click "send_input()"} "Execute"]
+       " (ctrl-enter)"]]
+     [:div.divider.divider-horizontal]
+     [:div#logs.flex-grow.card.font-mono {:style "max-height: 200px; overflow-y: scroll;"}]
+     ]
     [:div.font-mono
      [:div.inline.mx-2 [:b "X: "] [:span#X "N/A"]]
      [:div.inline.mx-2 [:b "Y: "] [:span#Y "N/A"]]
