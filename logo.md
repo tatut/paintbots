@@ -1,5 +1,7 @@
 # Some interesting toy logo programs
 
+Some are adaptions from the excellent gallery at http://www.mathcats.com/gallery/15wordcontest.html
+
 ## Tree branches
 
 This returns to the same position and draws randomly sprawling branches upwards.
@@ -27,4 +29,15 @@ repeat 6 [
 Adapted from (http://www.mathcats.com/gallery/15wordcontest.html#lissajous)
 ```
 repeat 8 [repeat 4 [rt 90 fd 25] bk 25 rt -45]
+```
+
+## Penta spiral
+
+```
+setxy 160 100
+for [l 0 95 3] [
+  repeat 5 [randpen fd :l rt 144]
+  fd :l
+  rt 30
+]
 ```

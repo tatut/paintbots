@@ -271,7 +271,7 @@ logo_repl(Bot0, BotF) :-
     await(InputPromise, Str),
     string_chars(Str, Cs),
     ( (Cs = "bye"; Str = end_of_file) ->
-      log('Bye!'),
+      log('Bye!',[]),
       Bot0 = BotF
     ; ( phrase(turtle(Program), Cs) ->
         log('Executing program',[]),
