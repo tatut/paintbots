@@ -7,4 +7,5 @@ export interface BotCommand {
   look?: string;
   msg?: string;
   bye?: string;
+  bots?: string;
 }

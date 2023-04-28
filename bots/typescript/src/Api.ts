@@ -72,6 +72,30 @@ export const look = async (bot: Bot): Promise<Bot> => {
   }
 };
 
+
+/**
+ * Returns (JSON) information about all registered bots
+ */
+export const bots = async (bot: Bot): Promise<Bot> => {
+  try {
+    const response = await axios.post(
+      API_URL,
+      { id: bot.id, bots: "" },
+      config
+    );
+    return response.data;
+  } catch (e) {
+    if (axios.isAxiosError(e)) {
+      const errResp = e.response;
+      const msg = errResp?.data || e.message
+
+      throw Error(`Failed to fetch bots state: ${msg}`);
+    } else {
+      throw e;
+    }
+  }
+};
+
 const parsePixelResponse = (response: string): Pixel => {
   const params = new URLSearchParams(response);
   let color, x, y;

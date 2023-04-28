@@ -59,6 +59,10 @@ export async function main() {
   // Print the current state of canvas in ASCII
   // console.log(await api.look(bot))
 
+  // Get the current state of all registered bots (json)
+  // Useful i.e. for bots that want to utilize some swarming behaviour
+  // console.log(await api.bots(bot))
+
 
   // Call 'deregisterBot' if you want to remove your bot from the server and, for example, change your bot name.
   // Your bot key is stored in botConfig.cfg after registration, and it is reused when you run this script again.
