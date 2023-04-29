@@ -175,13 +175,12 @@ randpen(randpen) --> "randpen".
 setxy(setxy(X,Y)) --> "setxy", ws, arg_(X), ws, arg_(Y).
 setang(setang(Deg)) --> "setang", ws, arg_(Deg).
 for(for(Var, From, To, Step, Program)) -->
-    "for", ws, "[", ws, var_name(Var), ws, num(From), ws, num(To), ws, num(Step), ws, "]", ws,
+    "for", ws, "[", ws, ident(Var), ws, num(From), ws, num(To), ws, num(Step), ws, "]", ws,
     "[", turtle(Program), "]".
-var_name(Var) --> [Var], { char_type(Var, alpha) }.
 num(N) --> "-", integer(I), { N is -I }.
 num(N) --> integer(N).
 arg_(num(N)) --> num(N).
-arg_(var(V)) --> ":", var_name(V).
+arg_(var(V)) --> ":", ident(V).
 arg_(rnd(Low,High)) --> "rnd", ws, num(Low), ws, num(High).
 
 % Parse a turtle program:
@@ -288,14 +287,16 @@ eval(defn(FnName, ArgNames, Body)) -->
     { writeln(eval_defn(FnName)) },
     setval(FnName, fn(ArgNames,Body)).
 
+% PENDING: don't push/pop state, as that restores bot position
+% we could save the angle, but otherwise push/pop the context.
 eval(fncall(FnName, ArgValues)) -->
-    push_state,
+    %push_state,
     user_data(Ctx),
     { writeln(context_before(Ctx)),
         fn(ArgNames,Body) = Ctx.FnName },
     setargs(ArgNames, ArgValues),
-    eval_all(Body),
-    pop_state.
+    eval_all(Body).
+    %pop_state.
 
 
 
