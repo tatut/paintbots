@@ -29,8 +29,11 @@ post(FormData, ResultOut) :-
 % Basic DCG state nonterminals
 state(S), [S] --> [S].
 state(S0, S), [S] --> [S0].
-push_state, [S, S] --> [S].
-pop_state, [S] --> [_, S].
+push_ctx, [S, Ctx] --> [S], { S = bot(_,_,_,_,Ctx) }.
+pop_ctx, [bot(Id,X,Y,C,Ctx)] -->
+    [bot(Id,X,Y,C,CtxCurr), CtxSaved],
+    %% Pop ctx (to clear out fn args, but keep angle which)
+    { Ctx = CtxSaved.put(angle, CtxCurr.angle) }.
 
 % X,Y position accessor
 pos(X,Y) --> state(bot(_,X,Y,_,_)).
@@ -290,13 +293,13 @@ eval(defn(FnName, ArgNames, Body)) -->
 % PENDING: don't push/pop state, as that restores bot position
 % we could save the angle, but otherwise push/pop the context.
 eval(fncall(FnName, ArgValues)) -->
-    %push_state,
+    push_ctx,
     user_data(Ctx),
     { writeln(context_before(Ctx)),
         fn(ArgNames,Body) = Ctx.FnName },
     setargs(ArgNames, ArgValues),
-    eval_all(Body).
-    %pop_state.
+    eval_all(Body),
+    pop_ctx.
 
 
 

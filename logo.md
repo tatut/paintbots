@@ -55,3 +55,16 @@ curve(10 10 rnd 10 20)
 curve(10 8 rnd 20 30)
 curve(10 6 rnd 30 50)
 ```
+
+Repeat from same starting point:
+```repeat 10 [
+ setxy 160 100
+ setang rnd 0 360
+def curve(n len rot) {
+   repeat :n [ randpen fd :len rt :rot ]
+}
+curve(10 9 rnd 10 20)
+curve(10 8 rnd 20 30)
+curve(10 6 rnd 30 50)
+]
+```
