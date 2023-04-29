@@ -29,6 +29,8 @@ post(FormData, ResultOut) :-
 % Basic DCG state nonterminals
 state(S), [S] --> [S].
 state(S0, S), [S] --> [S0].
+push_state, [S, S] --> [S].
+pop_state, [S] --> [_, S].
 
 % X,Y position accessor
 pos(X,Y) --> state(bot(_,X,Y,_,_)).
@@ -131,14 +133,36 @@ dir([_,Y1],[_,Y2], 'UP') :- Y1 > Y2.
 ws --> [W], { char_type(W, space) }, ws.
 ws --> [].
 
+% At least one whitespace
+ws1 --> [W], { char_type(W, space) }, ws.
+
 turtle([]) --> [].
 turtle([P|Ps]) --> ws, turtle_command(P), ws, turtle(Ps).
 
-turtle_command(Cmd) --> fd(Cmd) | bk(Cmd) | rt(Cmd) |
+turtle_command(Cmd) --> defn(Cmd) | fncall(Cmd) |
+                        fd(Cmd) | bk(Cmd) | rt(Cmd) |
                         pen(Cmd) | randpen(Cmd) |
                         repeat(Cmd) | setxy(Cmd) | setang(Cmd) |
                         for(Cmd) | say_(Cmd).
 
+defn(defn(FnName, ArgNames, Body)) -->
+    "def", ws1, ident(FnName), ws, "(", defn_args(ArgNames), ")", ws, "{", turtle(Body), "}".
+
+fncall(fncall(FnName, ArgValues)) --> ident(FnName), ws, "(", fncall_args(ArgValues), ")".
+fncall_args([]) --> [].
+fncall_args([V|Vs]) --> arg_(V), more_fncall_args(Vs).
+more_fncall_args([]) --> ws.
+more_fncall_args(Vs) --> ws1, fncall_args(Vs).
+
+ident_([]) --> [].
+ident_([I|Is]) --> [I], { char_type(I, csymf) }, ident_(Is).
+ident(I) --> ident_(Cs), { atom_chars(I, Cs) }.
+
+
+defn_args([]) --> [].
+defn_args([Arg|Args]) --> ws, ident(Arg), more_defn_args(Args).
+more_defn_args([]) --> ws.
+more_defn_args(Args) --> ws1, defn_args(Args).
 
 repeat(repeat(Times,Program)) --> "repeat", ws, arg_(Times), ws, "[", turtle(Program), "]".
 
@@ -166,7 +190,6 @@ arg_(rnd(Low,High)) --> "rnd", ws, num(Low), ws, num(High).
 
 
 % Interpreting a turtle program.
-% The state is a compound term turtle(BotState, AngleDegree)
 
 eval_turtle(Name, Program) :-
     setup_call_cleanup(
@@ -201,6 +224,11 @@ argv(rnd(Low,High), V) --> { random_between(Low,High,V) }.
 setval(Var, Val) -->
     user_data(Ctx0, Ctx1),
     { Ctx1 = Ctx0.put(Var, Val) }.
+
+setargs([],[]) --> [].
+setargs([K|Ks], [V|Vs]) -->
+    argv(V, Val),
+    setval(K, Val), setargs(Ks,Vs).
 
 eval(rt(DegArg)) -->
     argv(DegArg, Deg),
@@ -255,6 +283,21 @@ eval(for(Var, From, To, Step, Program)) -->
 
 eval(say(Msg)) -->
     say(Msg).
+
+eval(defn(FnName, ArgNames, Body)) -->
+    { writeln(eval_defn(FnName)) },
+    setval(FnName, fn(ArgNames,Body)).
+
+eval(fncall(FnName, ArgValues)) -->
+    push_state,
+    user_data(Ctx),
+    { writeln(context_before(Ctx)),
+        fn(ArgNames,Body) = Ctx.FnName },
+    setargs(ArgNames, ArgValues),
+    eval_all(Body),
+    pop_state.
+
+
 
 run(Name, Program) :-
     phrase(turtle(P), Program),
