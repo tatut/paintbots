@@ -72,12 +72,13 @@
      [:button#regbtn.btn.btn-sm {:on-click "register()"} "Register"]]
     [:div.flex.w-full
      [:div.grid.flex-grow.card
-      [:textarea#logo {:rows 7 :cols 80 :on-key-press "maybe_send_input(event)"} "repeat 5 [fd 25 rt 144]"]
+      [:textarea#logo {:style "font-family: monospace,monospace;" :rows 7 :cols 80
+                       :on-key-press "maybe_send_input(event)"} "repeat 5 [fd 25 rt 144]"]
       [:div
        [:button.btn.btn-sm {:on-click "send_input()"} "Execute"]
        " (ctrl-enter)"]]
      [:div.divider.divider-horizontal]
-     [:div#logs.flex-grow.card.font-mono {:style "max-height: 200px; overflow-y: scroll;"}]
+     [:div#logs.flex-grow.card.font-mono {:style "max-width: 50%; max-height: 200px; overflow-y: scroll;"}]
      ]
     [:div.font-mono
      [:div.inline.mx-2 [:b "X: "] [:span#X "N/A"]]
