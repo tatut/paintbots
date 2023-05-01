@@ -141,3 +141,41 @@ for [z 10 80 3] [
 ]
 
 ```
+
+## Draw letters
+
+All letter drawing functions expect to start at bottom left corner with angle 0.
+The turtle is positioned after drawing to the next character (half size forward).
+
+The functions take a single parameter s (for size, height).
+
+```
+
+def nx(s) { pu fd :s/2 pd }
+
+def a(s) {
+  rt -90 fd :s
+  rt 90 fd :s/2
+  rt 90 fd :s/2
+  rt 90 fd :s/2 bk :s/2 rt -90 fd :s/2
+  rt -90 nx(:s) }
+
+def h(s) {
+  rt -90 fd :s bk :s/2 rt 90 fd :s/2 rt -90 fd :s/2 rt 180
+  fd :s rt -90
+  nx(:s)
+}
+
+def e(s) {
+  rt -90 fd :s rt 90
+  repeat 2 [ fd :s/2 bk :s/2 rt 90 fd :s/2 rt -90 ]
+  fd :s/2 nx(:s)
+}
+
+def l(s) { rt -90 fd :s bk :s rt 90 fd :s/2 nx(:s) }
+
+def o(s) { pu fd :s/2 rt 180 pd fd :s/2 rt 90 fd :s rt 90 fd :s/2 rt 90 fd :s rt -90 nx(:s) }
+
+def hello(s) {
+  h(:s) e(:s) l(:s) l(:s) o(:s)
+}

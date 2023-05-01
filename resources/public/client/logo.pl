@@ -305,6 +305,8 @@ setval(Var, Val) -->
     { Env1 = Env0.put(Var, Val) }.
 
 setargs([],[]) --> [].
+setargs([K|Ks], []) --> { throw(error(not_enough_arguments, missing_vars([K|Ks]))) }.
+setargs([], [V|Vs]) --> { throw(error(too_many_arguments, extra_values([V|Vs]))) }.
 setargs([K|Ks], [V|Vs]) -->
     argv(V, Val),
     setval(K, Val), setargs(Ks,Vs).
@@ -422,6 +424,17 @@ logo(Name) :-
     logo_repl(Bot0, BotF),
     bye(BotF).
 
+exec(Program, Bot0, BotOut) :-
+    catch((log('Executing program',[]),
+           writeln(program(Program)),
+           call_time(phrase(eval_all(Program), [Bot0], [Bot1]), Time),
+           log('DONE in ~1f seconds', [Time.wall]),
+           BotOut = Bot1),
+          error(Error,ErrCtx),
+          (log('ERROR: ~w (~w)', [Error, ErrCtx]),
+           phrase(cmd([info='']), [Bot0], [BotOut]))).
+
+
 logo_repl(Bot0, BotF) :-
     InputPromise := get_input(),
     await(InputPromise, Str),
@@ -430,10 +443,7 @@ logo_repl(Bot0, BotF) :-
       log('Bye!',[]),
       Bot0 = BotF
     ; ( parse(Cs, Program) ->
-        log('Executing program',[]),
-        writeln(program(Program)),
-        call_time(phrase(eval_all(Program), [Bot0], [Bot1]), Time),
-        log('DONE in ~1f seconds', [Time.wall]),
+        exec(Program, Bot0, Bot1),
         logo_repl(Bot1, BotF)
       ; log('Syntax error in: ~w', [Str]),
         logo_repl(Bot0, BotF))).
