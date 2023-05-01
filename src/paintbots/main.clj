@@ -347,7 +347,8 @@
      [:button.btn.btn-md.btn-primary
       {:on-click (js/js (fn [name-input]
                           (let [name (reduce str (filter #(Character/isLetter %) name-input))]
-                            (when-not (str/blank? name)
+                            (when (and (not (str/blank? name))
+                                       (not= "admin" name))
                               (state/cmd! :create-canvas :name name))))
                         (js/input-value :newcanvas))} "Create"]]]))
 
