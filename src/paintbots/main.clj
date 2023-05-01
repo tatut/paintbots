@@ -320,10 +320,10 @@
                                                [id name])]))
      (fn [canvases]
        (h/html
-        [:div.canvases
+        [:div.canvases.flex.flex-wrap
          [::h/for [[canvas-name bots] canvases
                    :let [img (str "/" canvas-name ".png")]]
-          [:div.card.w-96.bg-base-100.shadow-xl.my-4
+          [:div {:class "card w-96 bg-base-100 shadow-xl m-4 max-w-1/3"}
            [:figure [:img {:src img}]]
            [:div.card-body
             [:h2.card-title canvas-name]
@@ -340,12 +340,21 @@
              {:on-click (js/js-when "confirm('Really lose this fine art?')"
                                     #(state/cmd! :clear-canvas :name canvas-name))} "Clear canvas"]]]]]))]
 
-    [:footer "the secret panel, you got here!"]]))
+    [:div
+     [:h2 "Add new canvas"]
+     [:input.input.input-bordered#newcanvas
+      {:placeholder "name (letters only)"}]
+     [:button.btn.btn-md.btn-primary
+      {:on-click (js/js (fn [name-input]
+                          (let [name (reduce str (filter #(Character/isLetter %) name-input))]
+                            (when-not (str/blank? name)
+                              (state/cmd! :create-canvas :name name))))
+                        (js/input-value :newcanvas))} "Create"]]]))
 
 (defn admin-page [config req]
   (let [[activated set-activated!] (source/use-state false)
         activate! (fn [password]
-                    (when (= password "letmein")
+                    (when (= password (get-in config [:admin :password]))
                       (set-activated! true)))]
     (with-page
       (constantly nil)
@@ -359,7 +368,8 @@
                [:div.form-control.m-4
                 [:label.label "Yeah. Whatsda passwoid?"]
                 [:input#adminpw
-                 {:type :password
+                 {:autofocus true
+                  :type :password
                   :on-keypress (js/js-when js/enter-pressed?
                                            activate!
                                            (js/input-value "adminpw"))}]])))]]))))
