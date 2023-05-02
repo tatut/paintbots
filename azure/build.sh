@@ -1,5 +1,9 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-source `dirname $0`/config.sh
+set -o errexit # abort on nonzero exitstatus
+set -o nounset # abort on unbound variable
+set -o pipefail # don't hide errors within pipes
 
-az acr build --file Dockerfile --registry $PAINTBOTS_AZURE_REGISTRY --image $PAINTBOTS_AZURE_IMAGE .
+source "$(dirname "$0")"/config.sh
+
+az acr build --file Dockerfile --registry "$PAINTBOTS_AZURE_REGISTRY" --image "$PAINTBOTS_AZURE_IMAGE" .
