@@ -2,7 +2,10 @@
 
 First write your config to `config.sh`. It is used by all the scripts.
 
-Setup:
+## Deploy
+
+Paintbots will be available at https://PAINTBOTS_AZURE_APPNAME.azurewebsites.net/
+
 ```bash
 # Login to azure
 az login
@@ -21,5 +24,19 @@ cp azure/config_sample.sh azure/config.sh
 
 # Create and configure webapp
 ./azure/create_webapp.sh
+
+```
+
+## Upgrade deployment
+
+```bash
+./azure/upgrade.sh
+
+```
+
+## Delete deployment
+
+```bash
+./azure/delete_group.sh
 
 ```

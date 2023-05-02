@@ -1,9 +1,13 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-source `dirname $0`/config.sh
+set -o errexit # abort on nonzero exitstatus
+set -o nounset # abort on unbound variable
+set -o pipefail # don't hide errors within pipes
 
-az acr create --name $PAINTBOTS_AZURE_REGISTRY \
-   --resource-group $PAINTBOTS_AZURE_RG \
+source "$(dirname "$0")"/config.sh
+
+az acr create --name "$PAINTBOTS_AZURE_REGISTRY" \
+   --resource-group "$PAINTBOTS_AZURE_RG" \
    --sku standard \
    --admin-enabled true
 
