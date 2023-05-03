@@ -206,6 +206,8 @@ setang(setang(X,Y)) --> "angto", exprt(X), exprt(Y).
 for(for(Var, From, To, Step, Program)) -->
     "for", ws, "[", ws, ident(Var), exprt(From), exprt(To), exprt(Step), "]", ws,
     "[", turtle(Program), "]".
+for(for(Var,ListExpr,Program)) -->
+    "for", ws, "[", ws, ident(Var), exprt(ListExpr), "]", ws, "[", turtle(Program), "]".
 num(N) --> "-", num_(I), { N is -I }.
 num(N) --> num_(N).
 num_(N) --> integer(N).
@@ -213,6 +215,10 @@ num_(F) --> digits(IP), ".", digits(FP), { append(IP, ['.'|FP], Term),  read_fro
 arg_(num(N)) --> num(N).
 arg_(var(V)) --> ":", ident(V).
 arg_(rnd(Low,High)) --> "rnd", ws, num(Low), ws, num(High).
+arg_(list(Items)) --> "\"", string_without("\"", Items), "\"".
+arg_(list(Items)) --> "[", list_items(Items), "]".
+list_items([]) --> [].
+list_items([I|Items]) --> exprt(I), list_items(Items).
 penup(penup) --> "pu" | "penup".
 pendown(pendown) --> "pd" | "pendown".
 
@@ -287,6 +293,11 @@ argv(var(V), Val) -->
     { Val = Env.V }.
 
 argv(num(V), V) --> [].
+
+argv(list([]), []) --> [].
+argv(list([Item_|Items_]), [Item|Items]) -->
+    argv(Item_, Item),
+    argv(list(Items_), Items).
 
 argv(rnd(Low,High), V) --> { random_between(Low,High,V) }.
 
@@ -376,7 +387,7 @@ eval(setang(TargetX_,TargetY_)) -->
 eval(penup) --> set_pen_up.
 eval(pendown) --> set_pen_down.
 
-%% Loop done
+%% Loop from lower to upper number
 eval(for_(_, From, To, Step, _)) -->
     { (Step > 0, From > To); (Step < 0, From < To) }, [].
 
@@ -391,6 +402,18 @@ eval(for(Var, From_, To_, Step_, Program)) -->
     argv(To_, To),
     argv(Step_, Step),
     eval(for_(Var, From, To, Step, Program)).
+
+%% Loop through a list
+
+eval(for_(_, [], _)) --> [].
+eval(for_(Var, [Item|Items], Program)) -->
+    setval(Var, Item),
+    eval_all(Program),
+    eval(for_(Var, Items, Program)).
+
+eval(for(Var, List_, Program)) -->
+    argv(List_, List),
+    eval(for_(Var, List, Program)).
 
 
 eval(say(Msg)) -->
