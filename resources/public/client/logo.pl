@@ -167,14 +167,16 @@ turtle([P|Ps]) --> ws, turtle_command(P), ws, turtle(Ps).
 turtle_command(Cmd) --> defn(Cmd) | fncall(Cmd) |
                         fd(Cmd) | bk(Cmd) | rt(Cmd) |
                         pen(Cmd) | randpen(Cmd) |
-                        repeat(Cmd) | setxy(Cmd) |  savexy(Cmd) |  setang(Cmd) |
+                        repeat(Cmd) | setxy(Cmd) |  savexy(Cmd) |
+                        setang(Cmd) | saveang(Cmd) |
                         for(Cmd) | say_(Cmd) |
                         pendown(Cmd) | penup(Cmd) | lineto(Cmd).
 
 defn(defn(FnName, ArgNames, Body)) -->
     "def", ws1, ident(FnName), ws, "(", defn_args(ArgNames), ")", ws, "{", turtle(Body), "}".
 
-fncall(fncall(FnName, ArgValues)) --> ident(FnName), ws, "(", fncall_args(ArgValues), ")".
+fncall(fncall(var(FnName), ArgValues)) --> "&", ident(FnName), ws, "(", fncall_args(ArgValues), ")".
+fncall(fncall(ident(FnName), ArgValues)) --> ident(FnName), ws, "(", fncall_args(ArgValues), ")".
 fncall_args([]) --> [].
 fncall_args([V|Vs]) --> exprt(V), more_fncall_args(Vs).
 more_fncall_args([]) --> ws.
@@ -201,6 +203,7 @@ randpen(randpen) --> "randpen".
 setxy(setxy(X,Y)) --> "setxy", exprt(X), exprt(Y).
 savexy(savexy(X,Y)) --> "savexy", ws, ident(X), ws1, ident(Y).
 lineto(lineto(X,Y)) --> "line", exprt(X), exprt(Y).
+saveang(saveang(A)) --> "saveang", ws, ident(A).
 setang(setang(Deg)) --> "setang", exprt(Deg).
 setang(setang(X,Y)) --> "angto", exprt(X), exprt(Y).
 for(for(Var, From, To, Step, Program)) -->
@@ -215,10 +218,12 @@ num_(F) --> digits(IP), ".", digits(FP), { append(IP, ['.'|FP], Term),  read_fro
 arg_(num(N)) --> num(N).
 arg_(var(V)) --> ":", ident(V).
 arg_(rnd(Low,High)) --> "rnd", ws, num(Low), ws, num(High).
-arg_(list(Items)) --> "\"", string_without("\"", Items), "\"".
+arg_(list(Items)) --> "\"", string_without("\"", Atoms), "\"", { list_atoms_items(Atoms, Items) }.
 arg_(list(Items)) --> "[", list_items(Items), "]".
 list_items([]) --> [].
 list_items([I|Items]) --> exprt(I), list_items(Items).
+list_atoms_items([], []).
+list_atoms_items([A|Atoms], [atom(A)|AtomsRest]) :- list_atoms_items(Atoms, AtomsRest).
 penup(penup) --> "pu" | "penup".
 pendown(pendown) --> "pd" | "pendown".
 
@@ -259,6 +264,7 @@ eval_turtle(Name, Program) :-
 
 eval_all([]) --> [].
 eval_all([Cmd|Cmds]) -->
+    %% { writeln(eval_cmd(Cmd)) },
     eval(Cmd),
     eval_all(Cmds).
 
@@ -293,6 +299,7 @@ argv(var(V), Val) -->
     { Val = Env.V }.
 
 argv(num(V), V) --> [].
+argv(atom(A), A) --> [].
 
 argv(list([]), []) --> [].
 argv(list([Item_|Items_]), [Item|Items]) -->
@@ -305,6 +312,11 @@ argv(op(Left_,Op,Right_), V) -->
     argv(Left_, Left),
     argv(Right_, Right),
     { eval_op(Left, Op, Right, V) }.
+
+fn_name(var(Var), FnName) -->
+    argv(var(Var), FnName).
+
+fn_name(ident(FnName), FnName) --> [].
 
 eval_op(L,+,R,V) :- V is L + R.
 eval_op(L,-,R,V) :- V is L - R.
@@ -368,6 +380,10 @@ eval(savexy(XVar,YVar)) -->
     setval(XVar, X),
     setval(YVar, Y).
 
+eval(saveang(AVar)) -->
+    state(bot(_,_,_,_,t(Ang,_,_))),
+    setval(AVar, Ang).
+
 eval(setang(AngArg)) -->
     argv(AngArg, Ang),
     set_angle(Ang).
@@ -422,7 +438,8 @@ eval(say(Msg)) -->
 eval(defn(FnName, ArgNames, Body)) -->
     setval(FnName, fn(ArgNames,Body)).
 
-eval(fncall(FnName, ArgValues)) -->
+eval(fncall(FnName_, ArgValues)) -->
+    fn_name(FnName_, FnName),
     push_env,
     user_data(t(_,Env,_)),
     { fn(ArgNames,Body) = Env.FnName },

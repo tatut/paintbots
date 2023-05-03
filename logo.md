@@ -71,7 +71,7 @@ curve(10 6 rnd 30 50)
 
 ## Perspective road
 
-``
+```
 def linexyz(sx sy sz ex ey ez) {
   setxy 160-((160-:sx)/(:sz*0.1)) 100-((100-:sy)/(:sz*0.1))
   line  160-((160-:ex)/(:ez*0.1)) 100-((100-:ey)/(:ez*0.1))
@@ -151,31 +151,41 @@ The functions take a single parameter s (for size, height).
 
 ```
 
-def nx(s) { pu fd :s/2 pd }
-
 def a(s) {
   rt -90 fd :s
   rt 90 fd :s/2
   rt 90 fd :s/2
   rt 90 fd :s/2 bk :s/2 rt -90 fd :s/2
-  rt -90 nx(:s) }
+  rt -90  }
 
 def h(s) {
   rt -90 fd :s bk :s/2 rt 90 fd :s/2 rt -90 fd :s/2 rt 180
   fd :s rt -90
-  nx(:s)
 }
 
 def e(s) {
   rt -90 fd :s rt 90
   repeat 2 [ fd :s/2 bk :s/2 rt 90 fd :s/2 rt -90 ]
-  fd :s/2 nx(:s)
+  fd :s/2
 }
 
-def l(s) { rt -90 fd :s bk :s rt 90 fd :s/2 nx(:s) }
+def l(s) { rt -90 fd :s bk :s rt 90 fd :s/2 }
+def o(s) { pu fd :s/2 rt 180 pd fd :s/2 rt 90 fd :s rt 90 fd :s/2 rt 90 fd :s rt -90 }
+def t(s) { pu fd :s/2 pd rt -90 fd :s rt -90 pu fd :s/2 rt 180 pd fd :s rt 90 pu fd :s rt -90 pd }
 
-def o(s) { pu fd :s/2 rt 180 pd fd :s/2 rt 90 fd :s rt 90 fd :s/2 rt 90 fd :s rt -90 nx(:s) }
-
-def hello(s) {
-  h(:s) e(:s) l(:s) l(:s) o(:s)
+def r(s) {
+  pu fd :s/2 savexy rx ry bk :s/2 pd
+  saveang ra
+  rt -90 fd :s
+  repeat 3 [ rt 90 fd :s/2 ]
+  line :rx :ry
+  setang :ra
 }
+
+
+/* underscore for space and spacing */
+def _(s) { pu fd :s/2 pd }
+
+setxy 10 70
+setang 330
+for [ c "hello_there" ] [ &c(10) _(10) rt 15 ]
