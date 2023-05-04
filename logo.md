@@ -189,3 +189,37 @@ def _(s) { pu fd :s/2 pd }
 setxy 10 70
 setang 330
 for [ c "hello_there" ] [ &c(10) _(10) rt 15 ]
+
+
+## Simple face
+
+Let's draw a simple round face  with eyes, nose, mouth, and some hair.
+
+
+```
+setxy 100 20 setang 0
+def face() {
+  savexy tx ty // save top of head position
+  repeat 36 [fd 10 rt 10]
+  rt 90 pu fd 50 rt 90 fd 20 rt 180
+  pd fd 2  // eye1
+  pu fd 50
+  pd fd 2 // eye2
+  pu bk 25 rt 90 fd 10
+  pd rt 15 fd 20 rt -105 fd 5 // nose
+  pu fd 25 rt 90 fd 5
+  pd
+  rt 40 repeat 50 [ fd 1 rt 2] // mouth
+  /* random hair */
+  repeat 20 [
+    setxy :tx :ty
+    setang rnd 0 180
+    repeat 10 [ fd 4 rt rnd -15 15 ]
+  ]
+}
+
+face()
+
+
+
+```
