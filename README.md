@@ -35,3 +35,41 @@ the server. See bots folder `_utils.sh` on how it uses curl to post commands.
 
 Register command returns just the ID (as plain text) for future use. All other commands return your
 bot's current position and color.
+
+## Deployment
+
+See azure/README.md for instructions on how to deploy to Azure cloud. You can also easily deploy to
+any cloud provider that supports hosting Docker images.
+
+
+## Configuration
+
+The default parameters in `config.edn` file are enough for most cases, but it is **highly** recommended
+to change at least the admin password.
+
+Notable configuration options:
+
+* `:width` and `:height` affect the canvas size (320x200 or 160x100 are good to have something visible, bigger canvas will use more memory also)
+* `:command-duration-ms` affects how long the processing of a single command will take at minimum (to prevent flooding with commands)
+* `:password` admin UI password
+
+See `config.edn` for full configuration with suitable sample values.
+
+## Endpoints
+
+HTTP endpoints in the running software:
+
+* `GET /admin` the admin UI that lets you create/clear canvases and kick players (see above for configuring password)
+* `GET /<canvas>` view a canvas with given name
+* `POST /<canvas>` post a bot command to the given canvas
+
+The canvas name in URL can only contain letters and the root path is a canvas named "scratch".
+A canvas cannot be named "admin".
+
+## Logo-like language
+
+The UI includes a Logo-like language interpreter that can be used through the browser (tested with Chrome).
+The evaluation uses the same API as all other bots, via the browser's `fetch`.
+
+To start the interpreted, view the canvas page and add URL parameter `?client=1`.
+For examples on programs see `logo.md` file in this repository.
