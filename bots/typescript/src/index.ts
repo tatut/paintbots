@@ -1,11 +1,13 @@
 import * as api from "./Api";
-import {deregisterBot, moveBot, registerBot} from "./util";
 import { Bot } from "./types/Bot";
+import { Color, colors } from "./types/Color";
+import { moveBot, registerBot } from "./util";
 
 // Name to be registered. Must be unique in the drawing board.
 const botName = "MyBot";
-// See color palette documentation in api.setColor
-const botColor = 6;
+// See color palette documentation in Color.ts
+const botColor: Color = colors.RED;
+
 const sayings = [
   "Kylän kohoralla komiasti, vaikka mettällä vähän kompuroottooki.",
   "Kyllä maailma opettaa, jonsei muuta niin hilijaa kävelemähän.",
@@ -28,9 +30,9 @@ const drawRectangle = async (bot: Bot, width: number): Promise<Bot> => {
   const dirs = ["RIGHT", "DOWN", "LEFT", "UP"];
 
   for (const dir of dirs) {
-    for (let i = 0; i < width; i++) {
-      await api.moveBot(bot, dir);
-      await api.paintPixel(bot);
+    for (let i = 1; i < width; i++) {
+      bot = await api.moveBot(bot, dir);
+      bot = await api.paintPixel(bot);
     }
   }
 
@@ -44,12 +46,12 @@ export async function main() {
 
   // Draw some simple rectangles for example (make your own helper functions for more complex shapes!)
   bot = await drawRectangle(bot, 6);
-  bot = await moveBot(bot, "RIGHT", 4);
-  bot = await drawRectangle(bot, 2);
+  bot = await moveBot(bot, "RIGHT", 3);
+  bot = await drawRectangle(bot, 3);
   bot = await moveBot(bot, "RIGHT", 6);
   bot = await drawRectangle(bot, 6);
-  bot = await moveBot(bot, "RIGHT", 4);
-  bot = await drawRectangle(bot, 2);
+  bot = await moveBot(bot, "RIGHT", 3);
+  bot = await drawRectangle(bot, 3);
   bot = await moveBot(bot, "RIGHT", 8);
 
   console.log(
@@ -62,7 +64,6 @@ export async function main() {
   // Get the current state of all registered bots (json)
   // Useful i.e. for bots that want to utilize some swarming behaviour
   // console.log(await api.bots(bot))
-
 
   // Call 'deregisterBot' if you want to remove your bot from the server and, for example, change your bot name.
   // Your bot key is stored in botConfig.cfg after registration, and it is reused when you run this script again.

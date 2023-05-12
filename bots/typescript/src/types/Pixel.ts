@@ -1,5 +1,7 @@
+import { Color } from "./Color";
+
 export interface Pixel {
-  color: number;
+  color: Color;
   position: {
     x: number;
     y: number;
