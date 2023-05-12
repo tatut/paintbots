@@ -30,7 +30,7 @@ const drawRectangle = async (bot: Bot, width: number): Promise<Bot> => {
   const dirs = ["RIGHT", "DOWN", "LEFT", "UP"];
 
   for (const dir of dirs) {
-    for (let i = 0; i < width; i++) {
+    for (let i = 1; i < width; i++) {
       await api.moveBot(bot, dir);
       await api.paintPixel(bot);
     }
@@ -46,12 +46,12 @@ export async function main() {
 
   // Draw some simple rectangles for example (make your own helper functions for more complex shapes!)
   bot = await drawRectangle(bot, 6);
-  bot = await moveBot(bot, "RIGHT", 4);
-  bot = await drawRectangle(bot, 2);
+  bot = await moveBot(bot, "RIGHT", 3);
+  bot = await drawRectangle(bot, 3);
   bot = await moveBot(bot, "RIGHT", 6);
   bot = await drawRectangle(bot, 6);
-  bot = await moveBot(bot, "RIGHT", 4);
-  bot = await drawRectangle(bot, 2);
+  bot = await moveBot(bot, "RIGHT", 3);
+  bot = await drawRectangle(bot, 3);
   bot = await moveBot(bot, "RIGHT", 8);
 
   console.log(
