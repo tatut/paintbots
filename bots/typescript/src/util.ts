@@ -1,6 +1,6 @@
 import { promises as fs } from "fs";
-import { Bot } from "./types/Bot";
 import * as api from "./Api";
+import { Bot } from "./types/Bot";
 
 const configFilePath = "botConfig.cfg";
 const fileExists = async (path: string) =>
@@ -19,7 +19,7 @@ export const storeBotConfig = async (
 };
 
 export const removeBotConfig = async () => {
-  await fs.unlink(configFilePath)
+  await fs.unlink(configFilePath);
 };
 
 export const loadBotConfig = async (): Promise<Bot | undefined> => {
@@ -66,19 +66,17 @@ export const deregisterBot = async (bot: Bot) => {
   await api.degisterBot(bot);
 
   // Remove bot config if present
-  await removeBotConfig()
-}
+  await removeBotConfig();
+};
 
 export const moveBot = async (
   bot: Bot,
   dir: string,
   dist: number
 ): Promise<Bot> => {
-  let result = bot;
-
   for (let i = 0; i < dist; i++) {
-    result = await api.moveBot(bot, dir);
+    bot = await api.moveBot(bot, dir);
   }
 
-  return result;
+  return bot;
 };

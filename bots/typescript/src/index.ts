@@ -5,7 +5,7 @@ import { moveBot, registerBot } from "./util";
 
 // Name to be registered. Must be unique in the drawing board.
 const botName = "MyBot";
-// See color palette documentation in api.setColor
+// See color palette documentation in Color.ts
 const botColor: Color = colors.RED;
 
 const sayings = [
@@ -31,8 +31,8 @@ const drawRectangle = async (bot: Bot, width: number): Promise<Bot> => {
 
   for (const dir of dirs) {
     for (let i = 1; i < width; i++) {
-      await api.moveBot(bot, dir);
-      await api.paintPixel(bot);
+      bot = await api.moveBot(bot, dir);
+      bot = await api.paintPixel(bot);
     }
   }
 
