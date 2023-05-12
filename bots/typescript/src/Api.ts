@@ -1,7 +1,7 @@
 import axios, { AxiosRequestConfig, RawAxiosRequestHeaders } from "axios";
 import { Bot } from "./types/Bot";
-import { Pixel } from "./types/Pixel";
 import { BotCommand } from "./types/BotCommand";
+import { Pixel } from "./types/Pixel";
 
 const API_URL = process.env.PAINTBOTS_URL || "http://localhost:31173/";
 
@@ -108,8 +108,8 @@ const parsePixelResponse = (response: string): Pixel => {
     x = parseInt(<string>params.get("x"));
   }
 
-  if (params.get("color")) {
-    y = parseInt(<string>params.get("color"));
+  if (params.get("y")) {
+    y = parseInt(<string>params.get("y"));
   }
 
   if (!color || !x || !y) {
