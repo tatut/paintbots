@@ -1,6 +1,8 @@
+import { Color } from "./Color";
+
 export interface BotCommand {
   id: string;
-  color?: number;
+  color?: Color;
   move?: string;
   paint?: string;
   clear?: string;

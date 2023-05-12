@@ -1,7 +1,9 @@
+import { Color } from "./Color";
+
 export interface Bot {
   id: string;
   name: string;
-  color?: number;
+  color?: Color;
   position?: {
     x: number;
     y: number;
