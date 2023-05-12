@@ -10,6 +10,6 @@ public class Main {
             b.paint();
         }
         b.bye();
-        System.exit();
+        System.exit(0);
     }
 }
