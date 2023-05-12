@@ -1,4 +1,4 @@
-node_modules/
-build/
-.idea/
-botConfig.cfg
+node_modules
+build
+.idea
+botConfig.cfg*
