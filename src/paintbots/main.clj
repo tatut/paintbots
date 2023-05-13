@@ -428,9 +428,10 @@
 (defn handle-bot-ws [req]
   (let [canvas (canvas-of req)
         bot-id (atom nil)
+        deregister! #(when-let [id @bot-id]
+                       (state/cmd! :deregister :canvas canvas :id id))
         close! (fn [ch]
-                 (when-let [id @bot-id]
-                   (state/cmd! :deregister :canvas canvas :id id))
+                 (deregister!)
                  (httpkit/close ch))]
     (httpkit/as-channel
      req
@@ -438,6 +439,7 @@
                  (if-not (httpkit/websocket? ch)
                    (httpkit/close ch)
                    (println "WS connected" req)))
+      :on-close (fn [_ch _status] (deregister!))
       :on-receive (fn [ch msg]
                     (let [form (some-> msg str/trim (ring-codec/form-decode "UTF-8"))
                           params (when (map? form)
