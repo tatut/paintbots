@@ -172,7 +172,7 @@ def e(s) {
 def l(s) { rt -90 fd :s bk :s rt 90 fd :s/2 }
 def o(s) { pu fd :s/2 rt 180 pd fd :s/2 rt 90 fd :s rt 90 fd :s/2 rt 90 fd :s rt -90 }
 def t(s) { pu fd :s/2 pd rt -90 fd :s rt -90 pu fd :s/2 rt 180 pd fd :s rt 90 pu fd :s rt -90 pd }
-
+def u(s) { rt -90 fd :s rt 180 pu fd :s rt -90 pd fd :s/2 rt -90 fd :s rt 180 pu fd :s pd rt -90 }
 def r(s) {
   pu fd :s/2 savexy rx ry bk :s/2 pd
   saveang ra
