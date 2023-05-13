@@ -8,20 +8,32 @@
 
 (def integer-fields #{:x :y})
 ;; Bot interface to server
+
+(def ^:dynamic *retry?* false)
+
 (defn- post [& {:as args}]
   (let [{:keys [status body headers] :as _resp} @(http/post url {:form-params args :as :text})]
-    (if (>= status 400)
+    (cond
+      (and (= status 409) *retry?*)
+      (do (Thread/sleep 1000)
+          (binding [*retry?* false]
+            (post args)))
+
+      (>= status 400)
       (throw (ex-info "Unexpected status code" {:status status :body body}))
-      (if (= (:content-type headers) "application/x-www-form-urlencoded")
-        (into {}
-              (for [field (str/split body #"&")
-                    :let [[k v] (str/split field #"=")
-                          kw (keyword (URLDecoder/decode k))
-                          v (URLDecoder/decode v)]]
-                [kw (if (integer-fields kw)
-                      (Integer/parseInt v)
-                      v)]))
-        body))))
+
+      (= (:content-type headers) "application/x-www-form-urlencoded")
+      (into {}
+            (for [field (str/split body #"&")
+                  :let [[k v] (str/split field #"=")
+                        kw (keyword (URLDecoder/decode k))
+                        v (URLDecoder/decode v)]]
+              [kw (if (integer-fields kw)
+                    (Integer/parseInt v)
+                    v)]))
+
+      :else
+      body)))
 
 (defn register [name]
   {:name name :id (post :register name)})
@@ -97,3 +109,21 @@
       (move "LEFT")
       (move-to (+ 75 (rand-int 10)) (+ 45 (rand-int 10)))
       (draw 9 4)))
+
+(defn stress-test
+  "Run n bots to stress test the server.
+  Returns 0 arity function to stop the stress test."
+  [n-bots]
+  (let [done? (atom false)]
+    (dotimes [i n-bots]
+      (.start (Thread. #(binding [*retry?* true]
+                          (loop [bot (register (str "stress" i))]
+                            (dotimes [i 10]
+                              (move bot "LEFT")
+                              (paint bot))
+                            (dotimes [i 10]
+                              (move bot "RIGHT")
+                              (paint bot))
+                            (when-not @done?
+                              (recur (color bot (rand-nth "0123456789abcdef")))))))))
+    #(reset! done? true)))
