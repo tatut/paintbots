@@ -2,6 +2,7 @@
   (:require [org.httpkit.server :as httpkit]
             [ring.middleware.params :as params]
             [ring.util.io :as ring-io]
+            [ring.util.codec :as ring-codec]
             [clojure.core.async :refer [go <! timeout] :as async]
             [clojure.string :as str]
             [ripley.html :as h]
@@ -10,8 +11,6 @@
             [clojure.java.io :as io]
             [ripley.live.source :as source]
             [ripley.live.poll :as poll]
-            [ripley.live.protocols :as p]
-            [ripley.impl.dynamic :as dynamic]
             [paintbots.png :as png]
             [paintbots.state :as state]
             [paintbots.video :as video]
@@ -45,52 +44,65 @@
       (let [id (state/cmd-sync! :register :canvas canvas :name name)]
         {:status 200 :body id}))))
 
-(defn bot-command [{{:keys [id] :as params} :form-params :as req} command-fn]
-  (let [canvas (canvas-of req)
-        state (state/current-state)
-        bot (state/bot-by-id state canvas id)]
-    (cond
-      (nil? bot)
-      {:status 409
-       :body (str "Bot with id " id " is not registered!")}
+(defn handle-bot-command [canvas command-duration-ms
+                          command-fn params id
+                          ch]
+  (go
+    (<! (timeout command-duration-ms))
+    (let [response (atom nil)
+          cmd-ch (state/cmd<! :bot-command
+                              :canvas canvas
+                              :id id
+                              :command-fn (partial command-fn (assoc params ::response response)))
+          {:keys [x y color] :as bot} (<! cmd-ch)
+          resp @response]
+      (httpkit/send!
+       ch
+       (cond
+         (string? resp)
+         {:status 200
+          :headers {"Content-Type" "text/plain"}
+          :body resp}
 
-      (:in-command? bot)
-      {:status 409
-       :body "Already issuing a command in another request!"}
+         (some? resp)
+         {:status 200
+          :headers {"Content-Type" "application/json"}
+          :body (cheshire/encode resp)}
 
-      :else
-      (do
-        (state/cmd! :in-bot-command :canvas canvas :id id)
-        (httpkit/as-channel
-         req
-         {:on-open (fn [ch]
-                     (go
-                       (<! (timeout (:command-duration-ms state)))
-                       (let [response (atom nil)
-                             cmd-ch (state/cmd<! :bot-command
-                                                 :canvas canvas
-                                                 :id id
-                                                 :command-fn (partial command-fn (assoc params ::response response)))
-                             {:keys [x y color] :as bot} (<! cmd-ch)
-                             resp @response]
-                         (httpkit/send!
-                          ch
-                          (cond
-                            (string? resp)
-                            {:status 200
-                             :headers {"Content-Type" "text/plain"}
-                             :body resp}
+         :else
+         {:status 200
+          :headers {"Content-Type" "application/x-www-form-urlencoded"}
+          :body (str "x=" x "&y=" y "&color=" (state/color-name color))})))))
 
-                            (some? resp)
-                            {:status 200
-                             :headers {"Content-Type" "application/json"}
-                             :body (cheshire/encode resp)}
+(defn bot-command [req command-fn]
+  (let [state (state/current-state)]
+    (if (::ws req)
+      ;; WebSocket bot command
+      (let [{:keys [id canvas params]} req]
+        (handle-bot-command canvas (:command-duration-ms state)
+                            command-fn params id (::ws req)))
 
-                            :else
-                            {:status 200
-                             :headers {"Content-Type" "application/x-www-form-urlencoded"}
-                             :body (str "x=" x "&y=" y "&color=" (state/color-name color))})
-                          true))))})))))
+      ;; Regular HTTP command
+      (let [{{:keys [id] :as params} :form-params} req
+            canvas (canvas-of req)
+            bot (state/bot-by-id state canvas id)]
+        (cond
+          (nil? bot)
+          {:status 409
+           :body (str "Bot with id " id " is not registered!")}
+
+          (:in-command? bot)
+          {:status 409
+           :body "Already issuing a command in another request!"}
+
+          :else
+          (do
+            (state/cmd! :in-bot-command :canvas canvas :id id)
+            (httpkit/as-channel
+             req
+             {:on-open (partial handle-bot-command canvas (:command-duration-ms state)
+                                command-fn params id)})))))))
+
 (defn move [req]
   (bot-command
    req
@@ -391,22 +403,70 @@
    [:bots #'bots]
    [:bye #'bye]])
 
+(defn- keywordize-params [p]
+  (into {}
+        (map (fn [[k v]]
+               [(keyword k) v]))
+        p))
+
+(defn- params->command [p]
+  (some (fn [[required-param handler-fn]]
+          (when (contains? p required-param)
+            handler-fn))
+        command-handlers))
+
 (defn handle-post [req]
   (let [{p :form-params :as req}
-        (update req :form-params
-                #(into {}
-                       (map (fn [[k v]]
-                              [(keyword k) v]))
-                       %))
-        cmd-handler (some (fn [[required-param handler-fn]]
-                            (when (contains? p required-param)
-                              handler-fn))
-                          command-handlers)]
+        (update req :form-params keywordize-params)
+        cmd-handler (params->command p)]
 
     (or (when cmd-handler
           (cmd-handler req))
         {:status 404
          :body "I don't recognize those parameters, try something else."})))
+
+(defn handle-bot-ws [req]
+  (let [canvas (canvas-of req)
+        bot-id (atom nil)
+        close! (fn [ch]
+                 (when-let [id @bot-id]
+                   (state/cmd! :deregister :canvas canvas :id id))
+                 (httpkit/close ch))]
+    (httpkit/as-channel
+     req
+     {:on-open (fn [ch]
+                 (if-not (httpkit/websocket? ch)
+                   (httpkit/close ch)
+                   (println "WS connected" req)))
+      :on-receive (fn [ch msg]
+                    (let [form (some-> msg str/trim (ring-codec/form-decode "UTF-8"))
+                          params (when (map? form)
+                                   (keywordize-params form))
+                          id @bot-id]
+                      (cond
+                        ;; Something unreadable, just close
+                        (nil? params)
+                        (do
+                          (println "Closing bot WS due to unreadable stuff: " msg)
+                          (close! ch))
+
+                        ;; Not registered yet, handle registration
+                        (and (nil? id) (:register params))
+                        (let [res (state/cmd-sync! :register :canvas canvas :name (:register params))]
+                          (if (string? res)
+                            (do (reset! bot-id res)
+                                (httpkit/send! ch "OK"))
+                            (do (httpkit/send! ch (:error res))
+                                (close! ch))))
+
+                        ;; Registered, handle a command
+                        id
+                        (let [params (dissoc params :register)
+                              cmd (params->command params)]
+                          (cmd {::ws ch
+                                :params params
+                                :id id
+                                :canvas canvas})))))})))
 
 (def assets
   {"/paintbots.css" {:t "text/css"}
@@ -437,6 +497,10 @@
             (= :post m)
             (handle-post req)
 
+            ;; Support bots connecting via WS to increase speed!
+            (contains? (:headers req) "upgrade")
+            (handle-bot-ws req)
+
             (= uri "/admin")
             (h/render-response (partial #'admin-page config req))
 
@@ -450,7 +514,7 @@
                 {:status 404
                  :body "No such canvas!"}))
 
-        ;; Try to download MP4 video of canvas snapshots
+            ;; Try to download MP4 video of canvas snapshots
             (str/ends-with? uri ".mp4")
             (if-let [canvas (some-> req canvas-of (str/replace #".mp4$" "") state/valid-canvas)]
               {:status 200
@@ -474,11 +538,11 @@
         {:keys [ip port width height command-duration-ms] :as config}
         (read-string (slurp config-file))]
     (println "Config: " (pr-str config))
-    (state/cmd! :config
-                :width width
-                :height height
-                :command-duration-ms command-duration-ms)
-    (state/cmd! :create-canvas :name "scratch")
+    (state/cmd-sync! :config
+                     :width width
+                     :height height
+                     :command-duration-ms command-duration-ms)
+    (state/cmd-sync! :create-canvas :name "scratch")
     (png/listen! state/state config)
     (alter-var-root #'server
                     (fn [_]

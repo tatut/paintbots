@@ -1,53 +1,83 @@
 (ns paintbots.bot
   (:require [org.httpkit.client :as http]
-            [clojure.string :as str])
+            [clojure.string :as str]
+            [bortexz.resocket :as ws]
+            [clojure.core.async :refer [<!! >!!] :as async])
   (:import (java.net URLEncoder URLDecoder)))
 
 (def url (or (System/getenv "PAINTBOTS_URL")
-             "http://localhost:31173"))
+             "ws://localhost:31173"))
 
 (def integer-fields #{:x :y})
 ;; Bot interface to server
 
 (def ^:dynamic *retry?* false)
 
-(defn- post [& {:as args}]
+(defn- form->params [body]
+  (into {}
+        (for [field (str/split body #"&")
+              :let [[k v] (str/split field #"=")
+                    kw (keyword (URLDecoder/decode k))
+                    v (when v (URLDecoder/decode v))]]
+          [kw (if (integer-fields kw)
+                (Integer/parseInt v)
+                v)])))
+
+(defn- params->form [p]
+  (str/join "&"
+            (for [[k v] p]
+              (str (URLEncoder/encode (name k)) "=" (URLEncoder/encode (str v))))))
+
+(defn- post [args]
   (let [{:keys [status body headers] :as _resp} @(http/post url {:form-params args :as :text})]
     (cond
       (and (= status 409) *retry?*)
       (do (Thread/sleep 1000)
           (binding [*retry?* false]
             (post args)))
-
       (>= status 400)
       (throw (ex-info "Unexpected status code" {:status status :body body}))
 
       (= (:content-type headers) "application/x-www-form-urlencoded")
-      (into {}
-            (for [field (str/split body #"&")
-                  :let [[k v] (str/split field #"=")
-                        kw (keyword (URLDecoder/decode k))
-                        v (URLDecoder/decode v)]]
-              [kw (if (integer-fields kw)
-                    (Integer/parseInt v)
-                    v)]))
+      (form->params body)
 
-      :else
-      body)))
+      (contains? args :register)
+      {:id body}
+
+      :else body)))
+
+
+
+(defn send! [{id :id :as bot} msg]
+  (if-let [ws (::ws bot)]
+    ;; Use WS connection
+    (do
+      (def *ws ws)
+      ;; id is implicit in the WS connection and not needed
+      (->> (dissoc msg :id) params->form (>!! (:output ws)))
+      (->> ws :input <!! form->params (merge bot)))
+
+    ;; Use HTTP
+    (merge bot (post (merge msg
+                            (when id
+                              {:id id}))))))
 
 (defn register [name]
-  {:name name :id (post :register name)})
+  (send! (merge {:name name}
+                (when (str/starts-with? url "ws")
+                  ;; if url is ws:// or wss:// use websocket connection
+                  {::ws (<!! (ws/connection url))}))
+
+         {:register name}))
 
 (defn move [bot dir]
-  (merge
-   bot
-   (post :id (:id bot) :move dir)))
+  (send! bot {:move dir}))
 
 (defn paint [bot]
-  (merge bot (post :id (:id bot) :paint "1")))
+  (send! bot {:paint "1"}))
 
 (defn color [bot c]
-  (merge bot (post :id (:id bot) :color c)))
+  (send! bot {:color c}))
 
 (defn- rotate [dir]
   (case dir
@@ -118,12 +148,10 @@
     (dotimes [i n-bots]
       (.start (Thread. #(binding [*retry?* true]
                           (loop [bot (register (str "stress" i))]
-                            (dotimes [i 10]
-                              (move bot "LEFT")
-                              (paint bot))
-                            (dotimes [i 10]
-                              (move bot "RIGHT")
-                              (paint bot))
                             (when-not @done?
-                              (recur (color bot (rand-nth "0123456789abcdef")))))))))
+                              (-> bot
+                                  (move (rand-nth ["LEFT" "RIGHT" "UP" "DOWN"]))
+                                  paint
+                                  (color (rand-nth "0123456789abcdef"))
+                                  recur)))))))
     #(reset! done? true)))

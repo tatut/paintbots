@@ -161,17 +161,24 @@
       {:x (rand-int canvas-width)
        :y (rand-int canvas-height)})))
 
+(defn bot-registered? [state canvas-name candidate-name]
+  (some (fn [[_ {bot-name :name}]]
+          (= bot-name candidate-name))
+        (get-in state [:canvas canvas-name :bots])))
+
 (defmethod process! :register [{:keys [width height] :as state} {:keys [canvas name]}]
-  (let [id (str (random-uuid))
-        bots (get-in (:canvas state) [canvas :bots])
-        free-start-pos (next-free-start-pos width height bots)
-        new-state (assoc-in state [:canvas canvas :bots id]
-                            {:name name
-                             :x (:x free-start-pos)
-                             :y (:y free-start-pos)
-                             :color (rand-nth (vals colors))
-                             :registered-at (java.util.Date.)})]
-    [new-state id]))
+  (if (bot-registered? state canvas name)
+    [state {:error "Name in use!"}]
+    (let [id (str (random-uuid))
+          bots (get-in (:canvas state) [canvas :bots])
+          free-start-pos (next-free-start-pos width height bots)
+          new-state (assoc-in state [:canvas canvas :bots id]
+                              {:name name
+                               :x (:x free-start-pos)
+                               :y (:y free-start-pos)
+                               :color (rand-nth (vals colors))
+                               :registered-at (java.util.Date.)})]
+      [new-state id])))
 
 (defmethod process! :deregister [old-state {:keys [canvas id] :as args}]
 
@@ -203,10 +210,6 @@
   (and (string? canvas-name)
        (contains? (:canvas state) canvas-name)))
 
-(defn bot-registered? [state canvas-name candidate-name]
-  (some (fn [[_ {bot-name :name}]]
-          (= bot-name candidate-name))
-        (get-in state [:canvas canvas-name :bots])))
 
 (defn bot-by-id [state canvas-name bot-id]
   (get-in state [:canvas canvas-name :bots bot-id]))
