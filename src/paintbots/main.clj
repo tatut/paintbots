@@ -67,11 +67,11 @@
                      (go
                        (<! (timeout (:command-duration-ms state)))
                        (let [response (atom nil)
-                             {:keys [x y color] :as bot}
-                             (state/cmd-sync! :bot-command
-                                              :canvas canvas
-                                              :id id
-                                              :command-fn (partial command-fn (assoc params ::response response)))
+                             cmd-ch (state/cmd<! :bot-command
+                                                 :canvas canvas
+                                                 :id id
+                                                 :command-fn (partial command-fn (assoc params ::response response)))
+                             {:keys [x y color] :as bot} (<! cmd-ch)
                              resp @response]
                          (httpkit/send!
                           ch
@@ -299,14 +299,17 @@
             [:svg#bot-positions {:viewBox (str "0 0 " width " " height)}
              [::h/live bots
               (fn [bots]
-                (let [bots (vals bots)]
-                  (h/html
-                   [:g.bots
-                    [::h/for [{:keys [x y color name]} bots
-                              :let [c (apply format "#%02x%02x%02x" color)]]
-                     [:g
-                      [:text {:x (- x 2) :y (- y 2.5) :font-size 2 :fill "white"} name]
-                      [:circle {:cx (+ 0.5 x) :cy (+ 0.5 y) :r 2 :stroke c :stroke-width 0.25}]]]])))]]]
+                (try
+                  (let [bots (vals bots)]
+                    (h/html
+                     [:g.bots
+                      [::h/for [{:keys [x y color name]} bots
+                                :let [c (apply format "#%02x%02x%02x" color)]]
+                       [:g
+                        [:text {:x (- x 2) :y (- y 2.5) :font-size 2 :fill "white"} name]
+                        [:circle {:cx (+ 0.5 x) :cy (+ 0.5 y) :r 2 :stroke c :stroke-width 0.25}]]]]))
+                  (catch Exception e
+                    (println "EX: " e ", BOTS: " (pr-str bots)))))]]]
            [::h/when client?
             (client/client-ui)]])))))
 

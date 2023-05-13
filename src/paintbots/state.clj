@@ -6,10 +6,8 @@
   A single go-loop process listens to commands that modify the game state
   and processes them in order."
   (:require [clojure.core.async :refer [go go-loop <! >! timeout] :as async]
-            [clojure.string :as str]
             [ripley.live.source :as source])
-  (:import (java.awt.image BufferedImage)
-           (java.awt Color Graphics2D)))
+  (:import (java.awt.image BufferedImage)))
 
 (defn- hex->rgb [hex]
   (let [hex (if (= \# (.charAt hex 0)) (subs hex 1) hex)]
@@ -94,16 +92,23 @@
 (defn cmd!
   "Issue a command."
   [command & {:as cmd-args}]
-  (async/>!! state-processor-ch (assoc cmd-args ::command command)))
+  (go
+    (>! state-processor-ch (assoc cmd-args ::command command))))
 
-(defn cmd-sync!
-  "Issue a command synchronously, returns commdn result."
+(defn cmd<!
+  "Issue a commadn, returns channel where the command result can be read."
   [command & {:as cmd-args}]
   (let [ch (async/chan 1)]
-    (async/>!! state-processor-ch (assoc cmd-args
-                                         ::command command
-                                         ::reply ch))
-    (async/<!! ch)))
+    (go
+      (>! state-processor-ch (assoc cmd-args
+                                    ::command command
+                                    ::reply ch)))
+    ch))
+
+(defn cmd-sync!
+  "Issue a command synchronously, returns command result. Do NOT call in go block!"
+  [command & {:as cmd-args}]
+  (async/<!! (cmd<! command cmd-args)))
 
 (defmethod process! :config [old-state config]
   [(merge old-state (dissoc config ::command ::reply))
