@@ -22,10 +22,11 @@
 (defonce server nil)
 
 (defn canvas-of [req]
-  (let [c (-> req :uri (subs 1))]
-    (if (= c "")
-      "scratch"
-      c)))
+  (or (:canvas req)
+      (let [c (-> req :uri (subs 1))]
+        (if (= c "")
+          "scratch"
+          c))))
 
 (defn register [{{name :register} :form-params :as req}]
   (let [canvas (canvas-of req)
@@ -442,16 +443,12 @@
       :on-close (fn [_ch _status] (deregister!))
       :on-receive (fn [ch msg]
                     (let [form (some-> msg str/trim (ring-codec/form-decode "UTF-8"))
-                          params (when (map? form)
-                                   (keywordize-params form))
+                          params (if (map? form)
+                                   (keywordize-params form)
+                                   ;; single command like "look" without any value
+                                   {(keyword form) ""})
                           id @bot-id]
                       (cond
-                        ;; Something unreadable, just close
-                        (nil? params)
-                        (do
-                          (println "Closing bot WS due to unreadable stuff: " msg)
-                          (close! ch))
-
                         ;; Not registered yet, handle registration
                         (and (nil? id) (:register params))
                         (let [res (state/cmd-sync! :register :canvas canvas :name (:register params))]
@@ -465,10 +462,12 @@
                         id
                         (let [params (dissoc params :register)
                               cmd (params->command params)]
-                          (cmd {::ws ch
-                                :params params
-                                :id id
-                                :canvas canvas})))))})))
+                          (if-not cmd
+                            (httpkit/send! ch "I don't understand that command :(")
+                            (cmd {::ws ch
+                                  :params params
+                                  :id id
+                                  :canvas canvas}))))))})))
 
 (def assets
   {"/paintbots.css" {:t "text/css"}

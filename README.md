@@ -36,6 +36,16 @@ the server. See bots folder `_utils.sh` on how it uses curl to post commands.
 Register command returns just the ID (as plain text) for future use. All other commands return your
 bot's current position and color.
 
+### Using WebSockets
+
+If you prefer, you can also connect via WebSocket. The API is the same, but instead of sending each
+command as a separate HTTP request, you connect with the canvas URL. The server expects a text message with
+the same form encoded format and sends the response back as a text message.
+
+The commands are the same, but register only returns "OK" instead of an id. Id parameter is not required
+as the id is implicit in the WebSocket connection. The bot is automatically deregistered when the connection
+is closed.
+
 ## Deployment
 
 See azure/README.md for instructions on how to deploy to Azure cloud. You can also easily deploy to
